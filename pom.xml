@@ -14,6 +14,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>17</maven.compiler.release>
+    <jetty.version>7.0.2.v20100331</jetty.version>
   </properties>
 
   <dependencyManagement>
@@ -29,6 +30,21 @@
   </dependencyManagement>
 
   <dependencies>
+  <!-- Source: https://mvnrepository.com/artifact/org.eclipse.jetty/jetty-server -->
+  <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <version>${jetty.version}</version>
+  </dependency>
+
+  <!-- Source: https://mvnrepository.com/artifact/javax.servlet/servlet-api -->
+  <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <version>2.5</version>
+      <scope>provided</scope>
+  </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
