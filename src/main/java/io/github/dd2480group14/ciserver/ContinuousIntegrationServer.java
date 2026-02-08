@@ -88,15 +88,19 @@ public class ContinuousIntegrationServer extends AbstractHandler
 	processBuilder.directory(directory);
 	processBuilder.redirectErrorStream(true);
 	Process process = processBuilder.start();
-	BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-	StringBuilder stringBuilder = new StringBuilder();
-	int character;
-	while ((character = bufferedReader.read()) != -1) {
-		stringBuilder.append((char) character);
+
+	try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+		StringBuilder stringBuilder = new StringBuilder();
+		int character;
+		while ((character = bufferedReader.read()) != -1) {
+			stringBuilder.append((char) character);
+		}
+		process.waitFor();
+		String output = stringBuilder.toString();
+		return output;
+	} finally {
+		process.destroy();
 	}
-	process.waitFor();
-	String output = stringBuilder.toString();
-	return output;
     }
 
     void gitClone(String url) {
