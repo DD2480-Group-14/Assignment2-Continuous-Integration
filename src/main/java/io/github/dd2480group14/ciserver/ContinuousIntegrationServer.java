@@ -5,6 +5,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
  
 import java.io.IOException;
+import java.util.StringTokenizer;
+import java.io.File;
  
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Request;
@@ -28,12 +30,84 @@ public class ContinuousIntegrationServer extends AbstractHandler
 
         System.out.println(target);
 
+        switch (request.getMethod().toUpperCase()) {
+            case "POST":
+                handlePost(target, baseRequest, request, response);
+                break;
+
+            case "GET":
+                handleGet(target, baseRequest, request, response);
+                break;
+
+            default:
+                response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                break;
+
+        }
+    }
+
+
+
+    private void handlePost(String target,
+                       Request baseRequest,
+                       HttpServletRequest request,
+                       HttpServletResponse response) 
+        throws IOException, ServletException
+    {
         // here you do all the continuous integration tasks
         // for example
         // 1st clone your repository
         // 2nd compile the code
 
         response.getWriter().println("CI job done");
+    }
+
+
+    
+    private void handleGet(String target,
+                       Request baseRequest,
+                       HttpServletRequest request,
+                       HttpServletResponse response) 
+        throws IOException, ServletException
+    {
+        response.getWriter().println("GET request");
+    }
+
+
+
+    /**
+     * Opens a new terminal in the directory dir
+     * and runs the given command.
+     * @param command The command to run.
+     * @param dir The directory to run it in.
+     * @return Returns the terminal output after the command.
+     */
+    String runCommand(String command, File dir) {
+        return "Output";
+    }
+
+    void gitClone(String url) {
+        return;
+    }
+
+    void removeGitDir() {
+        return;
+    }
+
+    String runTests(File dir) {
+        return "log";
+    }
+
+    String getBuildLog(String identifier) {
+        return "Text";
+    }
+
+    String getBuilds() {
+        return "Builds";
+    }
+
+    void storeBuildLog(String identifier, String log) {
+        return;
     }
  
     // used to start the CI server in command line
