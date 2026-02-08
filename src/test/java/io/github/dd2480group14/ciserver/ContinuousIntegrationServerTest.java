@@ -25,7 +25,7 @@ public class ContinuousIntegrationServerTest {
 		File directory = new File("./");
 		List<String> command = List.of("echo", "Testing");
 		String output = continuousIntegrationServer.runCommand(command, directory);
-		assertEquals("Testing", output.trim());
+		assertEquals("Testing", output);
 	}
 
 	/**

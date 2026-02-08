@@ -91,9 +91,14 @@ public class ContinuousIntegrationServer extends AbstractHandler
 
 	try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
 		StringBuilder stringBuilder = new StringBuilder();
-		int character;
-		while ((character = bufferedReader.read()) != -1) {
-			stringBuilder.append((char) character);
+		String line;
+		boolean firstLine = true;
+		while ((line = bufferedReader.readLine()) != null) {
+			if (!firstLine) {
+					stringBuilder.append("\n");
+			}
+			stringBuilder.append(line);
+			firstLine = false;
 		}
 		process.waitFor();
 		String output = stringBuilder.toString();
