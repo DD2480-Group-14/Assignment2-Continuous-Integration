@@ -2,6 +2,7 @@ package io.github.dd2480group14.ciserver;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,5 +41,21 @@ public class ContinuousIntegrationServerTest {
 		File directory = new File("./");
 		List<String> command = List.of("Fakecommand");
 		assertThrows(IOException.class, () -> continuousIntegrationServer.runCommand(command, directory));
+	}
+
+	/**
+	 * Clones a git repository and
+	 * verifies that the .git directory
+	 * exists
+	 */
+	@Test
+	public void runGitClone() throws IOException, InterruptedException {
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+		String url = "https://github.com/octocat/Hello-World.git";
+		String repositoryName = "Hello-World";
+		File tempDirectory = continuousIntegrationServer.gitClone(url);
+		File repositoryFolder = new File(tempDirectory, repositoryName);
+		boolean gitFolderExists = new File(repositoryFolder, ".git").exists();
+		assertTrue(gitFolderExists);
 	}
 }
