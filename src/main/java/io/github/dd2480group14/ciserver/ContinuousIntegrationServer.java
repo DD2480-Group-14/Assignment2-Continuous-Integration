@@ -5,7 +5,9 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
  
 import java.io.IOException;
-import java.util.StringTokenizer;
+import java.io.InputStreamReader;
+import java.util.List;
+import java.io.BufferedReader;
 import java.io.File;
  
 import org.eclipse.jetty.server.Server;
@@ -76,14 +78,34 @@ public class ContinuousIntegrationServer extends AbstractHandler
 
 
     /**
-     * Opens a new terminal in the directory dir
-     * and runs the given command.
+     * Executes command in specificed directory 
      * @param command The command to run.
-     * @param dir The directory to run it in.
+     * @param directory The directory to run it in.
      * @return Returns the terminal output after the command.
      */
-    String runCommand(String command, File dir) {
-        return "Output";
+    String runCommand(List<String> command, File directory) throws IOException, InterruptedException {
+	ProcessBuilder processBuilder = new ProcessBuilder(command);
+	processBuilder.directory(directory);
+	processBuilder.redirectErrorStream(true);
+	Process process = processBuilder.start();
+
+	try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+		StringBuilder stringBuilder = new StringBuilder();
+		String line;
+		boolean firstLine = true;
+		while ((line = bufferedReader.readLine()) != null) {
+			if (!firstLine) {
+					stringBuilder.append("\n");
+			}
+			stringBuilder.append(line);
+			firstLine = false;
+		}
+		process.waitFor();
+		String output = stringBuilder.toString();
+		return output;
+	} finally {
+		process.destroy();
+	}
     }
 
     void gitClone(String url) {
