@@ -3,10 +3,13 @@ package io.github.dd2480group14.ciserver;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
- 
+
 import java.io.*;
 
 import java.util.Scanner;
+import java.util.List;
+
+import java.nio.file.Files;
  
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Request;
@@ -101,18 +104,48 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
 
     /**
-     * Opens a new terminal in the directory dir
-     * and runs the given command.
+     * Executes command in specificed directory 
      * @param command The command to run.
-     * @param dir The directory to run it in.
+     * @param directory The directory to run it in.
      * @return Returns the terminal output after the command.
      */
-    String runCommand(String command, File dir) {
-        return "Output";
+    String runCommand(List<String> command, File directory) throws IOException, InterruptedException {
+	ProcessBuilder processBuilder = new ProcessBuilder(command);
+	processBuilder.directory(directory);
+	processBuilder.redirectErrorStream(true);
+	Process process = processBuilder.start();
+
+	try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+		StringBuilder stringBuilder = new StringBuilder();
+		String line;
+		boolean firstLine = true;
+		while ((line = bufferedReader.readLine()) != null) {
+			if (!firstLine) {
+					stringBuilder.append("\n");
+			}
+			stringBuilder.append(line);
+			firstLine = false;
+		}
+		process.waitFor();
+		String output = stringBuilder.toString();
+		return output;
+	} finally {
+		process.destroy();
+	}
     }
 
-    void gitClone(String url) {
-        return;
+
+    /**
+     * Clones git repository into a temporary directory
+     *
+     * @param url The url of the repository
+     * @return directory The temporary directory containing the repo
+     */
+    File gitClone(String url) throws IOException, InterruptedException {
+		File directory = Files.createTempDirectory("repository").toFile();
+		List<String> command = List.of("git", "clone", url);
+		runCommand(command, directory);
+		return directory;
     }
 
     void removeGitDir() {

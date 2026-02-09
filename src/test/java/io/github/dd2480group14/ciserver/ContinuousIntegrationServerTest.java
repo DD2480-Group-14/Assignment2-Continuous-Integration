@@ -7,21 +7,34 @@ import java.io.*;
 
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.util.List;
+
+
 /**
- * Unit test for simple App.
+ * Unit test for Conitinuous Integration Server.
  */
 public class ContinuousIntegrationServerTest {
+	/**
+	 * The command "echo Testing" should
+	 * give the output "Testing"
+	 * runCommand should therefor return
+	 * "Testing"
+	 */
+	@Test
+	public void runCommandOutput() throws IOException, InterruptedException {
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+		File directory = new File("./");
+		List<String> command = List.of("echo", "Testing");
+		String output = continuousIntegrationServer.runCommand(command, directory);
+		assertEquals("Testing", output);
+	}
 
-    /**
-     * Rigorous Test :-)
-     */
-    @Test
-    public void shouldAnswerWithTrue() {
-        assertTrue(true);
-    }
 
     /**
      * Creates a new server with a log folder with a 
@@ -64,5 +77,35 @@ public class ContinuousIntegrationServerTest {
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
         assertEquals("Log not found.", ciServer.getBuildLog(1));
     }
+
+	/**
+	 * The command "Fakecommand" does usually
+	 * not exist in most Unix OS
+	 * runCommand should therefor throw
+	 * an IOException
+	 */
+	@Test
+	public void runCommandFail() {
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+		File directory = new File("./");
+		List<String> command = List.of("Fakecommand");
+		assertThrows(IOException.class, () -> continuousIntegrationServer.runCommand(command, directory));
+	}
+
+	/**
+	 * Clones a git repository and
+	 * verifies that the .git directory
+	 * exists
+	 */
+	@Test
+	public void runGitClone() throws IOException, InterruptedException {
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+		String url = "https://github.com/octocat/Hello-World.git";
+		String repositoryName = "Hello-World";
+		File tempDirectory = continuousIntegrationServer.gitClone(url);
+		File repositoryFolder = new File(tempDirectory, repositoryName);
+		boolean gitFolderExists = new File(repositoryFolder, ".git").exists();
+		assertTrue(gitFolderExists);
+	}
 }
 

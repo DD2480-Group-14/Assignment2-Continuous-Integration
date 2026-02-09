@@ -25,3 +25,6 @@ replay_pid*
 
 # maven target folder
 target/
+
+# logs folder
+logs/
