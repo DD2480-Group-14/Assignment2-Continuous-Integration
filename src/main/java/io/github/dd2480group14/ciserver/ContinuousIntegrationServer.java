@@ -187,7 +187,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      */ 
     void storeBuildLog(String log, String buildId) {
         StringBuilder fileName = new StringBuilder();
-        fileName.append(logsFolder).append("/").append(buildId).append(".log");
+        fileName.append(logsFolder.getPath()).append("/").append(buildId).append(".log");
         File logFile = new File(fileName.toString());
 
         if(logFile.exists()) {
