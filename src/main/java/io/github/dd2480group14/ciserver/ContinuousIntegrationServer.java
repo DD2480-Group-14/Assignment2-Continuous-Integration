@@ -202,10 +202,10 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     }
 
     String getBuilds() {
-        Path logsDir = logsFolder.toPath();
+        Path logsFolderPath = logsFolder.toPath();
 
         StringBuilder allLogs = new StringBuilder();
-		try ( Stream<Path> paths = Files.walk(logsDir)) {
+		try ( Stream<Path> paths = Files.walk(logsFolderPath)) {
             for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
                 String buildId = path.getFileName().toString();
                 
