@@ -101,17 +101,19 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
         if (target.equals("/logs")) {
             response.getWriter().println(getBuilds());
+            return;
         }
 
         if (target.startsWith("/logs/")) {
             String subString = target.substring(6);
-            try {
-                int buildNumber = Integer.parseInt(subString);
-
+            String logText = getBuildLog(subString);
+            if (logText != null) {
+                response.getWriter().print(logText);
+                return;
             }
         }
 
-        response.getWriter().println("GET request");
+        response.sendError(404);
     }
 
 
