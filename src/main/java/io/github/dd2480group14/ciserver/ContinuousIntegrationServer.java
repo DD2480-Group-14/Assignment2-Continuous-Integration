@@ -98,6 +98,19 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                        HttpServletResponse response) 
         throws IOException, ServletException
     {
+
+        if (target.equals("/logs")) {
+            response.getWriter().println(getBuilds());
+        }
+
+        if (target.startsWith("/logs/")) {
+            String subString = target.substring(6);
+            try {
+                int buildNumber = Integer.parseInt(subString);
+
+            }
+        }
+
         response.getWriter().println("GET request");
     }
 
