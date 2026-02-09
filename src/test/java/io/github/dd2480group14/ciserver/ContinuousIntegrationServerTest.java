@@ -1,12 +1,12 @@
 package io.github.dd2480group14.ciserver;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.*;
 
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -67,15 +67,14 @@ public class ContinuousIntegrationServerTest {
 
     /**
      * Creates a new server with empty log folder.
-     * Trying to retreive a log should give the 
-     * message: "Log not found."
+     * Trying to retreive a log should return null.
      */
     @Test
     public void getBuildLogNegative(@TempDir Path path) {
         File dir = path.toFile();
 
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
-        assertEquals("Log not found.", ciServer.getBuildLog("1"));
+        assertNull(ciServer.getBuildLog("1"));
     }
 
 	/**
