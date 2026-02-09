@@ -16,6 +16,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
+import java.time.LocalDate;
+
 /** 
  Skeleton of a ContinuousIntegrationServer which acts as webhook
  See the Jetty documentation for API documentation of those classes.
@@ -195,7 +197,9 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         }
 
         StringBuilder fullLog = new StringBuilder();
-        fullLog.append("Build id (commit): ").append(buildId).append("\n").append(log);
+        fullLog.append("Build id (commit): ").append(buildId).append("\n");
+        fullLog.append("Build date: ").append(LocalDate.now().toString()).append("\n");
+        fullLog.append(log);
         
 
 

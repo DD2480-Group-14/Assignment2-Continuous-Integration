@@ -3,6 +3,7 @@ package io.github.dd2480group14.ciserver;
 import java.io.*;
 
 import java.nio.file.Path;
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -132,7 +133,9 @@ public class ContinuousIntegrationServerTest {
 
         String message = stringBuilder.toString();
         StringBuilder actualMessage = new StringBuilder();
-        actualMessage.append("Build id (commit): ").append(buildId).append("\n").append(log).append("\n");
+        actualMessage.append("Build id (commit): ").append(buildId).append("\n");
+        actualMessage.append("Build date: ").append(LocalDate.now().toString()).append("\n");
+        actualMessage.append(log).append("\n");
         assertEquals(message, actualMessage.toString());
     }
 
