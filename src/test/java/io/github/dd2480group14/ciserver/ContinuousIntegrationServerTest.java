@@ -61,7 +61,7 @@ public class ContinuousIntegrationServerTest {
         }
 
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
-        assertEquals(message, ciServer.getBuildLog(1));
+        assertEquals(message, ciServer.getBuildLog("1"));
     }
 
 
@@ -75,7 +75,7 @@ public class ContinuousIntegrationServerTest {
         File dir = path.toFile();
 
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
-        assertEquals("Log not found.", ciServer.getBuildLog(1));
+        assertEquals("Log not found.", ciServer.getBuildLog("1"));
     }
 
 	/**
