@@ -18,6 +18,18 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 */
 public class ContinuousIntegrationServer extends AbstractHandler {
     private final File logsFolder;
+
+    public ContinuousIntegrationServer() {
+        logsFolder = new File("logs");
+
+        if (!logsFolder.exists()) {
+            logsFolder.mkdir();
+        }
+
+        if (logsFolder.isFile()) {
+            throw new IllegalArgumentException("logsFolder can not be an already existing file.");
+        }
+    }
     
     public ContinuousIntegrationServer(File logsFolder) {
         this.logsFolder = logsFolder;
@@ -138,8 +150,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     public static void main(String[] args) throws Exception
     {
         Server server = new Server(8080);
-        File logsFolder = new File("logs");
-        server.setHandler(new ContinuousIntegrationServer(logsFolder)); 
+        server.setHandler(new ContinuousIntegrationServer()); 
         server.start();
         server.join();
     }
