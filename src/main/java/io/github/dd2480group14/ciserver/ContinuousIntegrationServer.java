@@ -10,6 +10,7 @@ import java.util.Scanner;
 import java.util.List;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
  
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Request;
@@ -175,8 +176,35 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         return "Builds";
     }
 
-    void storeBuildLog(String log) {
-        return;
+    /**
+     * Stores a build log in a log file
+     * The log file is named buildId.log,
+     * where the buildId could be a commit
+     * id
+     *
+     * @param log The output from building the project
+     * @param buildId The commit id used to identify a specific log
+     */ 
+    void storeBuildLog(String log, String buildId) {
+        StringBuilder fileName = new StringBuilder();
+        fileName.append(logsFolder).append("/").append(buildId).append(".log");
+        File logFile = new File(fileName.toString());
+
+        if(logFile.exists()) {
+            return;
+        }
+
+        StringBuilder fullLog = new StringBuilder();
+        fullLog.append("Build id (commit): ").append(buildId).append("\n").append(log);
+        
+
+
+        try {
+            logFile.createNewFile();
+            Files.writeString(Path.of(fileName.toString()), fullLog.toString());
+        } catch (Exception e) {
+            return;
+        }
     }
  
     // used to start the CI server in command line

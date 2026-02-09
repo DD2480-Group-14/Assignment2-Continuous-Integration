@@ -8,12 +8,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.util.List;
+import java.util.Scanner;
 
 
 /**
@@ -106,5 +105,60 @@ public class ContinuousIntegrationServerTest {
 		boolean gitFolderExists = new File(repositoryFolder, ".git").exists();
 		assertTrue(gitFolderExists);
 	}
+
+    /**
+     * Creates a new server and writes a log 
+     * The file contents should be the same as expected
+     */ 
+    @Test
+    public void writeLogPositive(@TempDir Path path) {
+        File dir = path.toFile();
+        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(dir);
+        String buildId = "test";
+        String log = "Text in file";
+
+        continuousIntegrationServer.storeBuildLog(log, buildId);
+
+        File expectedFile = new File(dir.getPath() + "/" + buildId + ".log");
+
+        StringBuilder stringBuilder = new StringBuilder();
+        try (Scanner scanner = new Scanner(expectedFile)) {
+            while (scanner.hasNextLine()) {
+                stringBuilder.append(scanner.nextLine()).append("\n");
+            }
+        } catch (FileNotFoundException e) {
+            assertTrue(false);
+        }
+
+        String message = stringBuilder.toString();
+        StringBuilder actualMessage = new StringBuilder();
+        actualMessage.append("Build id (commit): ").append(buildId).append("\n").append(log).append("\n");
+        assertEquals(message, actualMessage.toString());
+    }
+
+    /**
+     * Creates a file beforehand, which should 
+     * result in nothing being stored when trying
+     * to store a build log
+     */ 
+    @Test
+    public void writeLogNegative(@TempDir Path path) {
+        File dir = path.toFile();
+        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(dir);
+        String buildId = "test";
+        String log = "Text in file";
+
+        File testFile = new File(dir.getPath() + "/" + buildId + ".log");
+
+        try {
+        testFile.createNewFile();
+        } catch (Exception e) {
+            assertTrue(false);
+        }
+
+        continuousIntegrationServer.storeBuildLog(log, buildId);
+
+        assertEquals(0, testFile.length());
+    }
 }
 
