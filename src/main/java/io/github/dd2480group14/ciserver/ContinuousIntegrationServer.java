@@ -202,7 +202,26 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     }
 
     String getBuilds() {
-        return "Builds";
+        Path logsDir = logsFolder.toPath();
+
+        StringBuilder allLogs = new StringBuilder();
+		try ( Stream<Path> paths = Files.walk(logsDir)) {
+            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+                String buildId = path.getFileName().toString();
+                
+                if(!buildId.endsWith(".log")) {
+                    continue;
+                }
+
+                buildId = buildId.substring(0, buildId.length() - 4);
+
+                allLogs.append(getBuildLog(buildId));
+            }
+		} catch (Exception e) {
+            return null;
+        }
+        return allLogs.toString();
+        
     }
 
     void storeBuildLog(String log) {

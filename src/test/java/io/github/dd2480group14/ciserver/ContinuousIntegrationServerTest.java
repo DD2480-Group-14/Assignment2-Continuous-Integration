@@ -140,5 +140,72 @@ public class ContinuousIntegrationServerTest {
 		assertThrows(IllegalArgumentException.class, () -> continuousIntegrationServer.removeDirectoryInTmp(directory));
 		assertTrue(directory.exists());
 	}
+
+    /**
+     * Gets all build logs, which in this case is 
+     * 2. The whole message should be equal to the 
+     * doublemessage
+     */ 
+    @Test
+    public void getAllBuildLogsPositive(@TempDir Path path) {
+        String message = "Text in file\n";
+        String doubleMessage = message + message;
+        File dir = path.toFile();
+        File log1 = new File(dir.getPath() + "/log1.log");
+        File log2 = new File(dir.getPath() + "/log2.log");
+
+        try {
+            log1.createNewFile();
+            log2.createNewFile();
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(log1, true))) {
+            
+            writer.write(message);
+            
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(log2, true))) {
+            
+            writer.write(message);
+            
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
+        assertEquals(doubleMessage, ciServer.getBuilds());
+    }
+
+    /**
+     * Tries to get build logs when there are no
+     * .log files in the directory. Should return
+     * an empty string
+     */ 
+    @Test
+    public void getAllBuildLogsNegative(@TempDir Path path) {
+        File dir = path.toFile();
+        File testFile = new File(dir.getPath() + "/log.txt");
+        String message = "This should not be read";
+
+        try {
+        testFile.createNewFile();
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(testFile, true))) {
+            writer.write(message);
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer();
+        assertEquals("", ciServer.getBuilds());
+    }
 }
 
