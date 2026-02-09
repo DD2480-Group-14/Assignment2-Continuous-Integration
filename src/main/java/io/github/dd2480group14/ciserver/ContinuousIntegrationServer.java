@@ -165,7 +165,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             stringBuilder.append(scanner.nextLine()).append("\n");
             }
         } catch (FileNotFoundException e) {
-            return "Log not found.";
+            return null;
         }
 
         return stringBuilder.toString();
