@@ -1,18 +1,21 @@
 package io.github.dd2480group14.ciserver;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.ServletException;
- 
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
-import java.io.BufferedReader;
-import java.io.File;
- 
-import org.eclipse.jetty.server.Server;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /** 
  Skeleton of a ContinuousIntegrationServer which acts as webhook
@@ -49,22 +52,33 @@ public class ContinuousIntegrationServer extends AbstractHandler
     }
 
 
-
+    /**
+     * TO DO
+     * 
+     * @param target
+     * @param baseRequest
+     * @param request
+     * @param response
+     * @throws IOException
+     * @throws ServletException
+     */
     private void handlePost(String target,
                        Request baseRequest,
                        HttpServletRequest request,
                        HttpServletResponse response) 
         throws IOException, ServletException
     {
-        // here you do all the continuous integration tasks
-        // for example
-        // 1st clone your repository
-        // 2nd compile the code
+        String githubEvent = request.getHeader("X-GitHub-Event");
+        String body = IOUtils.toString(request.getReader());
+        JSONObject jsonObject = new JSONObject(body);
 
-        response.getWriter().println("CI job done");
+        if ("push".equals(githubEvent)) {
+            PushEventInfo info = extractPushInfo(jsonObject);
+            response.getWriter().println("Push event recieved.");
+        } else {
+            response.getWriter().println("No push event recieved.");
+        }
     }
-
-
     
     private void handleGet(String target,
                        Request baseRequest,
@@ -75,6 +89,31 @@ public class ContinuousIntegrationServer extends AbstractHandler
         response.getWriter().println("GET request");
     }
 
+    /**
+     * Extracts information from Github push webhook payload.
+     * 
+     * @param jsonObject the JSON payload recieved from Github push event.
+     * @return a PushEventInfo object containing extracted data.
+     */
+    public PushEventInfo extractPushInfo(JSONObject jsonObject){
+       
+        JSONObject repo = jsonObject.getJSONObject("repository");
+        String repoURL = repo.getString("clone_url");
+
+        String SHA = jsonObject.getString("after");
+
+        String ref = jsonObject.getString("ref");
+        String branch = ref.replace("refs/heads/", "");
+
+        JSONObject pusher = jsonObject.getJSONObject("pusher");
+        String author = pusher.getString("name");
+
+        JSONArray commits= jsonObject.getJSONArray("commits");
+        JSONObject latestCommit = commits.getJSONObject(0);
+        String commitMessage = latestCommit.getString("message");
+
+        return new PushEventInfo(author, repoURL, SHA, branch, commitMessage);
+    }
 
 
     /**
