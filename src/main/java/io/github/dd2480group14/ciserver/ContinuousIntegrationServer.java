@@ -6,6 +6,7 @@ import javax.servlet.ServletException;
  
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.List;
 import java.io.BufferedReader;
 import java.io.File;
@@ -116,8 +117,14 @@ public class ContinuousIntegrationServer extends AbstractHandler
         return;
     }
 
-    String runTests(File dir) {
-        return "log";
+    /**
+     * Runs mvn test to test the cloned repo
+     * @param directory The path to the cloned directory
+     * @return The terminal output after trying to build and test
+     */
+    String runTests(File directory) throws IOException, InterruptedException {
+        List<String> testCommand = Arrays.asList("mvn", "test");
+        return runCommand(testCommand, directory);
     }
 
     String getBuildLog(String identifier) {
