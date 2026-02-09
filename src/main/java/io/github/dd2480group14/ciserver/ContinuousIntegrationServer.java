@@ -7,6 +7,7 @@ import javax.servlet.ServletException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
+import java.nio.file.Files;
 import java.util.List;
 import java.io.BufferedReader;
 import java.io.File;
@@ -109,8 +110,18 @@ public class ContinuousIntegrationServer extends AbstractHandler
 	}
     }
 
-    void gitClone(String url) {
-        return;
+
+    /**
+     * Clones git repository into a temporary directory
+     *
+     * @param url The url of the repository
+     * @return directory The temporary directory containing the repo
+     */
+    File gitClone(String url) throws IOException, InterruptedException {
+		File directory = Files.createTempDirectory("repository").toFile();
+		List<String> command = List.of("git", "clone", url);
+		runCommand(command, directory);
+		return directory;
     }
 
     void removeGitDir() {
