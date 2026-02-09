@@ -4,13 +4,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
  
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.Arrays;
-import java.nio.file.Files;
+
+import java.io.*;
+
+import java.util.Scanner;
 import java.util.List;
-import java.io.BufferedReader;
-import java.io.File;
+
+import java.nio.file.Files;
  
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Request;
@@ -20,8 +21,33 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
  Skeleton of a ContinuousIntegrationServer which acts as webhook
  See the Jetty documentation for API documentation of those classes.
 */
-public class ContinuousIntegrationServer extends AbstractHandler
-{
+public class ContinuousIntegrationServer extends AbstractHandler {
+    private final File logsFolder;
+
+    public ContinuousIntegrationServer() {
+        logsFolder = new File("logs");
+
+        if (!logsFolder.exists()) {
+            logsFolder.mkdir();
+        }
+
+        if (logsFolder.isFile()) {
+            throw new IllegalArgumentException("logsFolder can not be an already existing file.");
+        }
+    }
+    
+    public ContinuousIntegrationServer(File logsFolder) {
+        this.logsFolder = logsFolder;
+
+        if (!logsFolder.exists()) {
+            logsFolder.mkdir();
+        }
+
+        if (logsFolder.isFile()) {
+            throw new IllegalArgumentException("logsFolder can not be an already existing file.");
+        }
+    }
+
     public void handle(String target,
                        Request baseRequest,
                        HttpServletRequest request,
@@ -138,15 +164,26 @@ public class ContinuousIntegrationServer extends AbstractHandler
         return runCommand(testCommand, directory);
     }
 
-    String getBuildLog(String identifier) {
-        return "Text";
+    String getBuildLog(String buildId) {
+        File file = new File(logsFolder.getPath() + "/" + buildId + ".log");
+        StringBuilder stringBuilder = new StringBuilder();
+
+        try (Scanner scanner = new Scanner(file)) {
+            while (scanner.hasNextLine()) {
+            stringBuilder.append(scanner.nextLine()).append("\n");
+            }
+        } catch (FileNotFoundException e) {
+            return null;
+        }
+
+        return stringBuilder.toString();
     }
 
     String getBuilds() {
         return "Builds";
     }
 
-    void storeBuildLog(String identifier, String log) {
+    void storeBuildLog(String log) {
         return;
     }
  
