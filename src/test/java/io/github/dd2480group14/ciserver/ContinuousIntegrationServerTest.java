@@ -1,13 +1,14 @@
 package io.github.dd2480group14.ciserver;
 
 import java.io.*;
-
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -163,5 +164,39 @@ public class ContinuousIntegrationServerTest {
 
         assertEquals(0, testFile.length());
     }
+	/**
+	 * Creates a temporary directory with
+	 * a file one level down. Verifies
+	 * that both the directory and file
+	 * is removed
+	 */
+	@Test
+	public void removeDirectoryAndSubfileInTmp() throws IOException, InterruptedException {
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+		File directory = Files.createTempDirectory("test").toFile();
+		String testFileName = "test.py";
+		File testFile = new File(directory, testFileName);
+		List<String> createFileCommand = List.of("touch", testFileName);
+		continuousIntegrationServer.runCommand(createFileCommand, directory);
+		assertTrue(directory.exists());
+		assertTrue(testFile.exists());
+		continuousIntegrationServer.removeDirectoryInTmp(directory);
+		assertFalse(directory.exists());
+		assertFalse(testFile.exists());
+	}
+
+	/**
+	 * Try to remove root of project
+	 * should fail because its outside
+	 * of the system's temporary folder
+	 */
+	@Test
+	public void removeDirectoryOutsideOfTmp() throws IOException, InterruptedException {
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+		File directory = new File("./");
+		assertTrue(directory.exists());
+		assertThrows(IllegalArgumentException.class, () -> continuousIntegrationServer.removeDirectoryInTmp(directory));
+		assertTrue(directory.exists());
+	}
 }
 
