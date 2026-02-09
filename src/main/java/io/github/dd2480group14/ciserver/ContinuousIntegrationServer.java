@@ -169,7 +169,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         return "log";
     }
 
-    String getBuildLog(int buildId) {
+    String getBuildLog(String buildId) {
         File file = new File(logsFolder.getPath() + "/" + buildId + ".log");
         StringBuilder stringBuilder = new StringBuilder();
 
