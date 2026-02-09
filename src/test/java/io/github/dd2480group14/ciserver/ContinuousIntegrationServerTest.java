@@ -58,4 +58,28 @@ public class ContinuousIntegrationServerTest {
 		boolean gitFolderExists = new File(repositoryFolder, ".git").exists();
 		assertTrue(gitFolderExists);
 	}
+
+    /**
+     * Runs "runTests" for a small maven project.
+     * The build should be successfull
+     */
+    @Test
+    public void runMavenTestSuccessfull() throws IOException, InterruptedException {
+        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+        File directory = new File("resources/small-maven-success");
+        String output = continuousIntegrationServer.runTests(directory);
+        assertTrue(output.contains("BUILD SUCCESS"));
+    }
+
+    /**
+     * Runs "runTests" for a small maven project.
+     * The build should fail
+     */
+    @Test
+    public void runMavenTestFail() throws IOException, InterruptedException {
+        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+        File directory = new File("resources/small-maven-fail");
+        String output = continuousIntegrationServer.runTests(directory);
+        assertTrue(output.contains("BUILD FAIL"));
+    }
 }

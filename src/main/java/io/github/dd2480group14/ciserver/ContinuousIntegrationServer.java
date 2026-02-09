@@ -133,8 +133,8 @@ public class ContinuousIntegrationServer extends AbstractHandler
      * @param directory The path to the cloned directory
      * @return The terminal output after trying to build and test
      */
-    String runTests(File directory) throws IOException, InterruptedException {
-        List<String> testCommand = Arrays.asList("mvn", "test");
+    public String runTests(File directory) throws IOException, InterruptedException {
+        List<String> testCommand = Arrays.asList("mvn", "clean", "test");
         return runCommand(testCommand, directory);
     }
 
