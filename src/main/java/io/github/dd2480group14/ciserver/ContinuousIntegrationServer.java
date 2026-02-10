@@ -214,14 +214,14 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      *
      * @return The next number
      */ 
-    private int getLogFilesNextNumber() {
+    private int getLogCount() {
         Path logsFolderPath = logsFolder.toPath();
 
         List<Path> fileList;
         try (Stream<Path> logFiles = Files.walk(logsFolderPath)){
             fileList = logFiles.filter(fileName -> fileName.getFileName().toString().endsWith(".log")).toList();
         } catch (IOException e) {
-            return -1;
+            return 0;
         }
 
         return fileList.size() + 1;
@@ -238,8 +238,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      */ 
     void storeBuildLog(String log, String buildId) {
         StringBuilder fileName = new StringBuilder();
-        int nextNumber = getLogFilesNextNumber();
-        nextNumber = (nextNumber == -1) ? 1 : nextNumber;
+        int nextNumber = getLogCount();
 
         fileName.append(logsFolder.getPath()).append("/").append(nextNumber).append(".log");
         File logFile = new File(fileName.toString());
