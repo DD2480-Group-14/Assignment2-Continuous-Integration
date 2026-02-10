@@ -2,6 +2,7 @@ package io.github.dd2480group14.ciserver;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,7 +12,6 @@ import java.util.List;
 import org.json.JSONObject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
@@ -43,7 +43,7 @@ public class ContinuousIntegrationServerTest {
      * should return the same message.
      */
     @Test
-    public void getBuildLogPositive(@TempDir Path path) {
+    public void getBuildLogPositive(@TempDir Path path) throws IOException {
         String message = "Text in file\n";
         File dir = path.toFile();
         File log = new File(dir.getPath() + "/1.log");
@@ -68,15 +68,32 @@ public class ContinuousIntegrationServerTest {
 
     /**
      * Creates a new server with empty log folder.
-     * Trying to retreive a log should return null.
+     * Trying to retreive a log should throw
+     * NoSuchFileException.
      */
     @Test
-    public void getBuildLogNegative(@TempDir Path path) {
+    public void getBuildLogNegative(@TempDir Path path) throws IOException {
         File dir = path.toFile();
-
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
-        assertNull(ciServer.getBuildLog("1"));
+		assertThrows(FileNotFoundException.class, () -> ciServer.getBuildLog("1"));
     }
+
+
+	/**
+	 * Creates a new server with empty log folder, and log file
+	 * outside of this folder. Trying to retrieve 
+	 * the log should throw IllegalArgumentException
+	 */
+	@Test
+	public void getBuildLogOutsideOfLogsFolder(@TempDir Path path) throws IOException {
+		File directory = path.toFile();
+		File testFile = new File(directory + "/../42304892.log");
+		System.out.println(testFile.toString());
+		testFile.createNewFile();
+		testFile.deleteOnExit();
+		ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(directory);
+		assertThrows(IllegalArgumentException.class, () -> ciServer.getBuildLog("../42304892"));
+	}
 
 	/**
 	 * The command "Fakecommand" does usually
