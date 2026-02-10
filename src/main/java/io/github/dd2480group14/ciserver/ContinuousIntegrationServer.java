@@ -112,11 +112,12 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
         if (target.startsWith("/logs/")) {
             String subString = target.substring(6);
-            String logText = getBuildLog(subString);
-
-            if (logText != null) {
-                logText = logText.replace("\n", "<br>");
+            try {
+                String logText = getBuildLog(subString);
                 response.getWriter().write(logText);
+                return;
+            } catch (Exception e) {
+                response.sendError(404);
                 return;
             }
         }
