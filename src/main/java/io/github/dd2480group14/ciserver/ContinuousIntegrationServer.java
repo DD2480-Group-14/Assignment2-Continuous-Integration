@@ -3,6 +3,8 @@ package io.github.dd2480group14.ciserver;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
+ 
+import java.util.Arrays;
 
 import java.io.*;
 
@@ -182,8 +184,14 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 		return directoryPath;
     }
 
-    String runTests(File dir) {
-        return "log";
+    /**
+     * Runs mvn test to test the cloned repo
+     * @param directory The path to the cloned directory
+     * @return The terminal output after trying to build and test
+     */
+    public String runTests(File directory) throws IOException, InterruptedException {
+        List<String> testCommand = Arrays.asList("mvn", "clean", "test");
+        return runCommand(testCommand, directory);
     }
 
     String getBuildLog(String buildId) {
