@@ -194,20 +194,27 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         return runCommand(testCommand, directory);
     }
 
-    String getBuildLog(String buildId) {
+    String getBuildLog(String buildId) throws IOException, IllegalArgumentException {
         File file = new File(logsFolder.getPath() + "/" + buildId + ".log");
+		if (!isInLogDirectory(file)) {
+			throw new IllegalArgumentException("Build log must be in logs directory");
+		};
         StringBuilder stringBuilder = new StringBuilder();
 
         try (Scanner scanner = new Scanner(file)) {
             while (scanner.hasNextLine()) {
             stringBuilder.append(scanner.nextLine()).append("\n");
             }
-        } catch (FileNotFoundException e) {
-            return null;
-        }
-
+        } 
         return stringBuilder.toString();
     }
+
+    private boolean isInLogDirectory(File file) {
+		Path realFilePath = file.toPath().toAbsolutePath().normalize();
+		Path realLogPath = logsFolder.toPath().toAbsolutePath().normalize();
+		boolean result = realFilePath.startsWith(realLogPath);
+		return result;
+    };
 
     String getBuilds() {
         return "Builds";
