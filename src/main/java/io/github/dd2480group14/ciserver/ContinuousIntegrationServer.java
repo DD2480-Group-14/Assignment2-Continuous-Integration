@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /** 
@@ -114,13 +115,11 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                 // TO DO: Run CI Pipeline
 
             } else {
-                // Acknowledge and ignore if githubEvent is other than push
                 response.setStatus(HttpServletResponse.SC_OK);
-                response.getWriter().println("No push event recieved.");
+                response.getWriter().println("No push event recieved. Event ignored.");
             }
 
-        } catch (Exception e) {
-            // Status code 400 if parsing fails
+        } catch (IllegalArgumentException | JSONException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
@@ -139,25 +138,29 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * 
      * @param jsonObject the JSON payload recieved from Github push event.
      * @return a PushEventInfo record containing extracted data.
+     * @throws IllegalArgumentException if payload is not valid.
      */
     public PushEventInfo extractPushInfo(JSONObject jsonObject){
-       
-        JSONObject repo = jsonObject.getJSONObject("repository");
-        String repoURL = repo.getString("clone_url");
+        try {
+            JSONObject repo = jsonObject.getJSONObject("repository");
+            String repoURL = repo.getString("clone_url");
 
-        String SHA = jsonObject.getString("after");
+            String SHA = jsonObject.getString("after");
 
-        String ref = jsonObject.getString("ref");
-        String branch = ref.replace("refs/heads/", "");
+            String ref = jsonObject.getString("ref");
+            String branch = ref.replace("refs/heads/", "");
 
-        JSONObject pusher = jsonObject.getJSONObject("pusher");
-        String author = pusher.getString("name");
+            JSONObject pusher = jsonObject.getJSONObject("pusher");
+            String author = pusher.getString("name");
 
-        JSONArray commits= jsonObject.getJSONArray("commits");
-        JSONObject latestCommit = commits.getJSONObject(0);
-        String commitMessage = latestCommit.getString("message");
+            JSONArray commits= jsonObject.getJSONArray("commits");
+            JSONObject latestCommit = commits.getJSONObject(0);
+            String commitMessage = latestCommit.getString("message");
 
-        return new PushEventInfo(author, repoURL, SHA, branch, commitMessage);
+            return new PushEventInfo(author, repoURL, SHA, branch, commitMessage);
+        } catch (JSONException e) {
+            throw new IllegalArgumentException("Invalid Github push payload", e);
+        }
     }
 
 

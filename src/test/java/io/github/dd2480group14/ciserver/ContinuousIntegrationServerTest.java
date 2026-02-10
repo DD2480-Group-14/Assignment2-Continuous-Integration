@@ -130,7 +130,7 @@ public class ContinuousIntegrationServerTest {
 	}
 
 	/**
-	 *Should throw an exception when payload is not empty or not a push event.
+	 * Should throw an exception when payload lacks required fields.
 	 */
 	@Test
 	public void testNonPushWebhookEvent() {
@@ -140,7 +140,7 @@ public class ContinuousIntegrationServerTest {
 
 		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
 
-		assertThrows(org.json.JSONException.class, () -> continuousIntegrationServer.extractPushInfo(json));
+		assertThrows(IllegalArgumentException.class, () -> continuousIntegrationServer.extractPushInfo(json));
 	}
 	/**
 	 * Clones a git repository and
