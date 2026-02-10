@@ -120,11 +120,11 @@ public class ContinuousIntegrationServerTest {
 		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
 		PushEventInfo info = continuousIntegrationServer.extractPushInfo(json);
 
-		assertEquals("https://github.com/test/example.git", info.getRepoURL());
-		assertEquals("123123", info.getSHA());
-		assertEquals("example", info.getBranch());
-		assertEquals("test-user", info.getAuthor());
-		assertEquals("Initial commit", info.getCommitMessage());
+		assertEquals("https://github.com/test/example.git", info.repoURL());
+		assertEquals("123123", info.SHA());
+		assertEquals("example", info.branch());
+		assertEquals("test-user", info.author());
+		assertEquals("Initial commit", info.commitMessage());
 	}
 
 	/**

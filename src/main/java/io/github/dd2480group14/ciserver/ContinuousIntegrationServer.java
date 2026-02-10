@@ -121,7 +121,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * Extracts information from Github push webhook payload.
      * 
      * @param jsonObject the JSON payload recieved from Github push event.
-     * @return a PushEventInfo object containing extracted data.
+     * @return a PushEventInfo record containing extracted data.
      */
     public PushEventInfo extractPushInfo(JSONObject jsonObject){
        
