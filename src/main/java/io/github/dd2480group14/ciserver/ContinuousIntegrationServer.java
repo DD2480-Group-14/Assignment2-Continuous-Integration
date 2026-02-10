@@ -7,10 +7,14 @@ import javax.servlet.ServletException;
 import java.io.*;
 
 import java.util.Scanner;
+import java.util.stream.Stream;
+import java.util.Comparator;
 import java.util.List;
 
 import java.nio.file.Files;
- 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -165,8 +169,34 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 		return directory;
     }
 
-    void removeGitDir() {
-        return;
+    /**
+     * Recursively removes specified directory, 
+     * subfiles and subdirectories if located in
+     * the system's tmp directory
+     *
+     * @param directory The directory to remove 
+     */
+    void removeDirectoryInTmp(File directory) throws IOException {
+		Path verifiedDirectoryPath = getVerifiedPath(directory);
+		try ( Stream<Path> paths = Files.walk(verifiedDirectoryPath)) {
+				for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+					Files.delete(path);
+				}
+		};
+    }
+
+    private Path getVerifiedPath(File directory) throws IllegalArgumentException, IOException {
+		if (directory == null || !directory.exists()) {
+				throw new IllegalArgumentException("Directory does not exists");
+		}
+		Path directoryPath = directory.toPath().toRealPath();
+		Path systemTmpPath = Paths.get(System.getProperty("java.io.tmpdir")).toRealPath();
+		if (!directoryPath.startsWith(systemTmpPath)) {
+				throw new IllegalArgumentException(
+					String.format("Only allowed to remove directories in %s", systemTmpPath)
+				);
+		}
+		return directoryPath;
     }
 
     String runTests(File dir) {
