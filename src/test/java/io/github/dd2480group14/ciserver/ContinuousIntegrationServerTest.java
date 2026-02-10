@@ -113,7 +113,7 @@ public class ContinuousIntegrationServerTest {
     @Test
     public void runMavenTestSuccessfull() throws IOException, InterruptedException {
         ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
-        File directory = new File("resources/small-maven-success");
+        File directory = new File("src/test/resources/maven-projects/small-maven-success");
         String output = continuousIntegrationServer.runTests(directory);
         assertTrue(output.contains("BUILD SUCCESS"));
     }
@@ -125,7 +125,7 @@ public class ContinuousIntegrationServerTest {
     @Test
     public void runMavenTestFail() throws IOException, InterruptedException {
         ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
-        File directory = new File("resources/small-maven-fail");
+        File directory = new File("src/test/resources/maven-projects/small-maven-fail");
         String output = continuousIntegrationServer.runTests(directory);
         assertTrue(output.contains("BUILD FAIL"));
     }
