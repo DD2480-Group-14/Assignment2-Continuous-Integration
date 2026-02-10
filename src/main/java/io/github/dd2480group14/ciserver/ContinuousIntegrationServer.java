@@ -208,6 +208,23 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     }
 
     /**
+     * Get the next number to be
+     * used for the name of a new
+     * log file
+     *
+     * @return The next number
+     */ 
+    private int getLogFilesNextNumber() {
+        Path logsFolderPath = logsFolder.toPath();
+
+        try (Stream<Path> logFiles = Files.list(logsFolderPath)){
+            return (int)logFiles.filter(fileName -> fileName.endsWith(".log")).count() + 1;
+        } catch (IOException e) {
+            return -1;
+        }
+    }
+
+    /**
      * Stores a build log in a log file
      * The log file is named buildId.log,
      * where the buildId could be a commit
@@ -218,7 +235,8 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      */ 
     void storeBuildLog(String log, String buildId) {
         StringBuilder fileName = new StringBuilder();
-        fileName.append(logsFolder.getPath()).append("/").append(buildId).append(".log");
+        int nextNumber = getLogFilesNextNumber();
+        fileName.append(logsFolder.getPath()).append("/").append(nextNumber).append(".log");
         File logFile = new File(fileName.toString());
 
         if(logFile.exists()) {

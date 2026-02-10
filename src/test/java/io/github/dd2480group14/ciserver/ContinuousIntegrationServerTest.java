@@ -121,7 +121,7 @@ public class ContinuousIntegrationServerTest {
 
         continuousIntegrationServer.storeBuildLog(log, buildId);
 
-        File expectedFile = new File(dir.getPath() + "/" + buildId + ".log");
+        File expectedFile = new File(dir.getPath() + "/1.log");
 
         StringBuilder stringBuilder = new StringBuilder();
         try (Scanner scanner = new Scanner(expectedFile)) {
@@ -152,7 +152,7 @@ public class ContinuousIntegrationServerTest {
         String buildId = "test";
         String log = "Text in file";
 
-        File testFile = new File(dir.getPath() + "/" + buildId + ".log");
+        File testFile = new File(dir.getPath() + "/1.log");
 
         try {
         testFile.createNewFile();
