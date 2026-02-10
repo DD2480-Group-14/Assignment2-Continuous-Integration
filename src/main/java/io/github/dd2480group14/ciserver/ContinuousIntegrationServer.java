@@ -58,7 +58,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         throws IOException, ServletException
     {
         response.setContentType("text/html;charset=utf-8");
-        response.setStatus(HttpServletResponse.SC_OK);
         baseRequest.setHandled(true);
 
         System.out.println(target);
@@ -81,14 +80,13 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
 
     /**
-     * TO DO
+     * Handles incoming webhook notifications from Github 
+     * by parsing the JSON payload and trigger the build process.
      * 
-     * @param target
-     * @param baseRequest
-     * @param request
-     * @param response
-     * @throws IOException
-     * @throws ServletException
+     * @param target                target of the request.
+     * @param baseRequest           
+     * @param request               HttpServletRequest request containing headers and payload.
+     * @param response              HttpServletResponse reponse acknowledge webhook. 
      */
     private void handlePost(String target,
                        Request baseRequest,
@@ -97,14 +95,26 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         throws IOException, ServletException
     {
         String githubEvent = request.getHeader("X-GitHub-Event");
-        String body = IOUtils.toString(request.getReader());
-        JSONObject jsonObject = new JSONObject(body);
 
-        if ("push".equals(githubEvent)) {
-            PushEventInfo info = extractPushInfo(jsonObject);
-            response.getWriter().println("Push event recieved.");
-        } else {
-            response.getWriter().println("No push event recieved.");
+        try {
+            String body = IOUtils.toString(request.getReader());
+            JSONObject jsonObject = new JSONObject(body);
+
+            if ("push".equals(githubEvent)) {
+                PushEventInfo info = extractPushInfo(jsonObject);
+                
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().println("Push event recieved.");
+
+                // TO DO: Run CI Pipeline
+
+            } else {
+                // Ignore if githubEvent is other than push
+                response.getWriter().println("No push event recieved.");
+            }
+
+        } catch (Exception e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
     
