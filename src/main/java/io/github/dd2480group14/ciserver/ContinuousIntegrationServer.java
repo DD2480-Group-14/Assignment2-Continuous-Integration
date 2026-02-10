@@ -114,11 +114,13 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                 // TO DO: Run CI Pipeline
 
             } else {
-                // Ignore if githubEvent is other than push
+                // Acknowledge and ignore if githubEvent is other than push
+                response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().println("No push event recieved.");
             }
 
         } catch (Exception e) {
+            // Status code 400 if parsing fails
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
