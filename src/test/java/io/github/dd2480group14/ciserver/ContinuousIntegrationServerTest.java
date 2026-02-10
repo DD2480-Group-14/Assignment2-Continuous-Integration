@@ -195,6 +195,30 @@ public class ContinuousIntegrationServerTest {
         
     }
 
+    /** 
+     * Runs "runTests" for a small maven project.
+     * The build should be successfull
+     */
+    @Test
+    public void runMavenTestSuccessfull() throws IOException, InterruptedException {
+        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+        File directory = new File("src/test/resources/maven-projects/small-maven-success");
+        String output = continuousIntegrationServer.runTests(directory);
+        assertTrue(output.contains("BUILD SUCCESS"));
+    }
+
+    /**
+     * Runs "runTests" for a small maven project.
+     * The build should fail
+     */
+    @Test
+    public void runMavenTestFail() throws IOException, InterruptedException {
+        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+        File directory = new File("src/test/resources/maven-projects/small-maven-fail");
+        String output = continuousIntegrationServer.runTests(directory);
+        assertTrue(output.contains("BUILD FAIL"));
+    }
+  
 	/**
 	 * Creates a temporary directory with
 	 * a file one level down. Verifies
