@@ -72,25 +72,24 @@ public class ContinuousIntegrationServerTest {
     @Test
     public void getBuildLogNegative(@TempDir Path path) throws IOException {
         File dir = path.toFile();
-	
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
-	assertThrows(NoSuchFileException.class, () -> ciServer.getBuildLog("1"));
+		assertThrows(NoSuchFileException.class, () -> ciServer.getBuildLog("1"));
     }
 
 
 	/**
-         * Creates a new server with empty log folder.
-         * Trying to retreive a log outside of log folder
-	 * should throw IllegalArgumentException
+	 * Creates a new server with empty log folder, and log file
+	 * outside of this folder. Trying to retrieve 
+	 * the log should throw IllegalArgumentException
 	 */
 	@Test
 	public void getBuildLogOutsideOfLogsFolder(@TempDir Path path) throws IOException {
-        	File directory = path.toFile();
+		File directory = path.toFile();
 		File testFile = new File(directory + "/../42304892.log");
 		System.out.println(testFile.toString());
 		testFile.createNewFile();
 		testFile.deleteOnExit();
-        	ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(directory);
+		ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(directory);
 		assertThrows(IllegalArgumentException.class, () -> ciServer.getBuildLog("../42304892"));
 	}
 

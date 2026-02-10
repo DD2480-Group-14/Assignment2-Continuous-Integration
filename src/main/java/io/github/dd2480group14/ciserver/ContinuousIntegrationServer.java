@@ -188,7 +188,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
     String getBuildLog(String buildId) throws IOException {
         File file = new File(logsFolder.getPath() + "/" + buildId + ".log");
-	verifyBuildLogPath(file);
+		verifyBuildLogPath(file);
         StringBuilder stringBuilder = new StringBuilder();
 
         try (Scanner scanner = new Scanner(file)) {
