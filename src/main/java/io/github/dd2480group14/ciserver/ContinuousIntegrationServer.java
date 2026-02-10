@@ -186,7 +186,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         return "log";
     }
 
-    String getBuildLog(String buildId) throws IOException {
+    String getBuildLog(String buildId) throws IOException, IllegalArgumentException {
         File file = new File(logsFolder.getPath() + "/" + buildId + ".log");
 		if (!isInLogDirectory(file)) {
 			throw new IllegalArgumentException("Build log must be in logs directory");
@@ -201,7 +201,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         return stringBuilder.toString();
     }
 
-    private boolean isInLogDirectory(File file) throws IOException {
+    private boolean isInLogDirectory(File file) {
 		Path realFilePath = file.toPath().toAbsolutePath().normalize();
 		Path realLogPath = logsFolder.toPath().toAbsolutePath().normalize();
 		boolean result = realFilePath.startsWith(realLogPath);
