@@ -188,7 +188,9 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
     String getBuildLog(String buildId) throws IOException {
         File file = new File(logsFolder.getPath() + "/" + buildId + ".log");
-		verifyBuildLogPath(file);
+		if (!isInLogDirectory(file)) {
+			throw new IllegalArgumentException("File is not in log directory");
+		};
         StringBuilder stringBuilder = new StringBuilder();
 
         try (Scanner scanner = new Scanner(file)) {
@@ -199,12 +201,11 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         return stringBuilder.toString();
     }
 
-    private void verifyBuildLogPath(File file) throws IOException {
-		Path realFilePath = file.toPath().toRealPath();
-		Path realLogPath = logsFolder.toPath().toRealPath();
-		if (!realFilePath.startsWith(realLogPath)) {
-			throw new IllegalArgumentException("Can not retrieve outside of logs directory");
-		}
+    private boolean isInLogDirectory(File file) throws IOException {
+		Path realFilePath = file.toPath().toAbsolutePath().normalize();
+		Path realLogPath = logsFolder.toPath().toAbsolutePath().normalize();
+		boolean result = realFilePath.startsWith(realLogPath);
+		return result;
     };
 
     String getBuilds() {

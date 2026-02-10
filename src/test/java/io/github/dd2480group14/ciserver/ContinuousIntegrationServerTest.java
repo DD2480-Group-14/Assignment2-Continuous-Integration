@@ -73,7 +73,7 @@ public class ContinuousIntegrationServerTest {
     public void getBuildLogNegative(@TempDir Path path) throws IOException {
         File dir = path.toFile();
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
-		assertThrows(NoSuchFileException.class, () -> ciServer.getBuildLog("1"));
+		assertThrows(FileNotFoundException.class, () -> ciServer.getBuildLog("1"));
     }
 
 
