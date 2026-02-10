@@ -4,11 +4,13 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
 import org.json.JSONObject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -154,6 +156,65 @@ public class ContinuousIntegrationServerTest {
 		File repositoryFolder = new File(tempDirectory, repositoryName);
 		boolean gitFolderExists = new File(repositoryFolder, ".git").exists();
 		assertTrue(gitFolderExists);
+	}
+
+    /**
+     * Runs "runTests" for a small maven project.
+     * The build should be successfull
+     */
+    @Test
+    public void runMavenTestSuccessfull() throws IOException, InterruptedException {
+        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+        File directory = new File("src/test/resources/maven-projects/small-maven-success");
+        String output = continuousIntegrationServer.runTests(directory);
+        assertTrue(output.contains("BUILD SUCCESS"));
+    }
+
+    /**
+     * Runs "runTests" for a small maven project.
+     * The build should fail
+     */
+    @Test
+    public void runMavenTestFail() throws IOException, InterruptedException {
+        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+        File directory = new File("src/test/resources/maven-projects/small-maven-fail");
+        String output = continuousIntegrationServer.runTests(directory);
+        assertTrue(output.contains("BUILD FAIL"));
+    }
+  
+	/**
+	 * Creates a temporary directory with
+	 * a file one level down. Verifies
+	 * that both the directory and file
+	 * is removed
+	 */
+	@Test
+	public void removeDirectoryAndSubfileInTmp() throws IOException, InterruptedException {
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+		File directory = Files.createTempDirectory("test").toFile();
+		String testFileName = "test.py";
+		File testFile = new File(directory, testFileName);
+		List<String> createFileCommand = List.of("touch", testFileName);
+		continuousIntegrationServer.runCommand(createFileCommand, directory);
+		assertTrue(directory.exists());
+		assertTrue(testFile.exists());
+		continuousIntegrationServer.removeDirectoryInTmp(directory);
+		assertFalse(directory.exists());
+		assertFalse(testFile.exists());
+	}
+
+	/**
+	 * Try to remove root of project
+	 * should fail because its outside
+	 * of the system's temporary folder
+	 */
+	@Test
+	public void removeDirectoryOutsideOfTmp() throws IOException, InterruptedException {
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+		File directory = new File("./");
+		assertTrue(directory.exists());
+		assertThrows(IllegalArgumentException.class, () -> continuousIntegrationServer.removeDirectoryInTmp(directory));
+		assertTrue(directory.exists());
 	}
 }
 

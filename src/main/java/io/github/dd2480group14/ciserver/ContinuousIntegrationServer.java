@@ -6,8 +6,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Stream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -199,12 +204,44 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 		return directory;
     }
 
-    void removeGitDir() {
-        return;
+    /**
+     * Recursively removes specified directory, 
+     * subfiles and subdirectories if located in
+     * the system's tmp directory
+     *
+     * @param directory The directory to remove 
+     */
+    void removeDirectoryInTmp(File directory) throws IOException {
+		Path verifiedDirectoryPath = getVerifiedPath(directory);
+		try ( Stream<Path> paths = Files.walk(verifiedDirectoryPath)) {
+				for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+					Files.delete(path);
+				}
+		};
     }
 
-    String runTests(File dir) {
-        return "log";
+    private Path getVerifiedPath(File directory) throws IllegalArgumentException, IOException {
+		if (directory == null || !directory.exists()) {
+				throw new IllegalArgumentException("Directory does not exists");
+		}
+		Path directoryPath = directory.toPath().toRealPath();
+		Path systemTmpPath = Paths.get(System.getProperty("java.io.tmpdir")).toRealPath();
+		if (!directoryPath.startsWith(systemTmpPath)) {
+				throw new IllegalArgumentException(
+					String.format("Only allowed to remove directories in %s", systemTmpPath)
+				);
+		}
+		return directoryPath;
+    }
+
+    /**
+     * Runs mvn test to test the cloned repo
+     * @param directory The path to the cloned directory
+     * @return The terminal output after trying to build and test
+     */
+    public String runTests(File directory) throws IOException, InterruptedException {
+        List<String> testCommand = Arrays.asList("mvn", "clean", "test");
+        return runCommand(testCommand, directory);
     }
 
     String getBuildLog(String buildId) {
