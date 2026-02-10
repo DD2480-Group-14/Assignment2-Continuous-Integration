@@ -1,31 +1,19 @@
 package io.github.dd2480group14.ciserver;
 
-<<<<<<< 6-handle-push-notification
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.json.JSONObject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import org.junit.jupiter.api.Test;
-=======
-import java.io.*;
-
-import java.nio.file.Path;
-
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.util.List;
-
->>>>>>> main
 
 /**
  * Unit test for Conitinuous Integration Server.
@@ -103,7 +91,6 @@ public class ContinuousIntegrationServerTest {
 	}
 
 	/**
-<<<<<<< 6-handle-push-notification
 	 * Verifies that a push payload is correctly parsed.
 	 * The PushEventInfo should have the correct 
 	 * repository URL, commit SHA, branch name, author and commit message.
@@ -152,7 +139,8 @@ public class ContinuousIntegrationServerTest {
 		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
 
 		assertThrows(org.json.JSONException.class, () -> continuousIntegrationServer.extractPushInfo(json));
-=======
+	}
+	/**
 	 * Clones a git repository and
 	 * verifies that the .git directory
 	 * exists
@@ -166,7 +154,6 @@ public class ContinuousIntegrationServerTest {
 		File repositoryFolder = new File(tempDirectory, repositoryName);
 		boolean gitFolderExists = new File(repositoryFolder, ".git").exists();
 		assertTrue(gitFolderExists);
->>>>>>> main
 	}
 }
 
