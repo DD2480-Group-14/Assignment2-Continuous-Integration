@@ -189,7 +189,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     String getBuildLog(String buildId) throws IOException {
         File file = new File(logsFolder.getPath() + "/" + buildId + ".log");
 		if (!isInLogDirectory(file)) {
-			throw new IllegalArgumentException("File is not in log directory");
+			throw new IllegalArgumentException("Build log must be in logs directory");
 		};
         StringBuilder stringBuilder = new StringBuilder();
 
