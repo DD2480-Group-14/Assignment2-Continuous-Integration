@@ -133,11 +133,11 @@ public class ContinuousIntegrationServerTest {
         }
 
         String message = stringBuilder.toString();
-        StringBuilder actualMessage = new StringBuilder();
-        actualMessage.append("Build id (commit): ").append(commitId).append("\n");
-        actualMessage.append("Build date: ").append(LocalDate.now().toString()).append("\n");
-        actualMessage.append(log).append("\n");
-        assertEquals(message, actualMessage.toString());
+        StringBuilder expectedMessage = new StringBuilder();
+        expectedMessage.append("Commit ID: ").append(commitId).append("\n");
+        expectedMessage.append("Build date: ").append(LocalDate.now().toString()).append("\n");
+        expectedMessage.append(log).append("\n");
+        assertEquals(message, expectedMessage.toString());
     }
 
     /**

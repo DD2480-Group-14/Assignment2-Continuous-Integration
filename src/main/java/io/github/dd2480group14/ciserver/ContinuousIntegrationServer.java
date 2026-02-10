@@ -248,7 +248,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         }
 
         StringBuilder fullLog = new StringBuilder();
-        fullLog.append("Build id (commit): ").append(commitId).append("\n");
+        fullLog.append("Commit ID: ").append(commitId).append("\n");
         fullLog.append("Build date: ").append(LocalDate.now().toString()).append("\n");
         fullLog.append(log);
         
