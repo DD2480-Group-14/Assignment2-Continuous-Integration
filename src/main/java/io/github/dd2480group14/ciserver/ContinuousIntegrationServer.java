@@ -224,21 +224,21 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             return 0;
         }
 
-        return fileList.size() + 1;
+        return fileList.size();
     }
 
     /**
      * Stores a build log in a log file
-     * The log file is named buildId.log,
-     * where the buildId could be a commit
-     * id
+     * The log file is named in ascending
+     * order from the previously created
+     * log file.
      *
      * @param log The output from building the project
-     * @param buildId The commit id used to identify a specific log
+     * @param commitId The commit id used to identify a specific log
      */ 
-    void storeBuildLog(String log, String buildId) {
+    void storeBuildLog(String log, String commitId) {
         StringBuilder fileName = new StringBuilder();
-        int nextNumber = getLogCount();
+        int nextNumber = getLogCount() + 1;
 
         fileName.append(logsFolder.getPath()).append("/").append(nextNumber).append(".log");
         File logFile = new File(fileName.toString());
@@ -248,7 +248,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         }
 
         StringBuilder fullLog = new StringBuilder();
-        fullLog.append("Build id (commit): ").append(buildId).append("\n");
+        fullLog.append("Build id (commit): ").append(commitId).append("\n");
         fullLog.append("Build date: ").append(LocalDate.now().toString()).append("\n");
         fullLog.append(log);
         

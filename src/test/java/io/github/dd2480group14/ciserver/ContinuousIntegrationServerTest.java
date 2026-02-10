@@ -116,10 +116,10 @@ public class ContinuousIntegrationServerTest {
     public void writeLogPositive(@TempDir Path path) {
         File dir = path.toFile();
         ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(dir);
-        String buildId = "test";
+        String commitId = "test";
         String log = "Text in file";
 
-        continuousIntegrationServer.storeBuildLog(log, buildId);
+        continuousIntegrationServer.storeBuildLog(log, commitId);
 
         File expectedFile = new File(dir.getPath() + "/1.log");
 
@@ -134,7 +134,7 @@ public class ContinuousIntegrationServerTest {
 
         String message = stringBuilder.toString();
         StringBuilder actualMessage = new StringBuilder();
-        actualMessage.append("Build id (commit): ").append(buildId).append("\n");
+        actualMessage.append("Build id (commit): ").append(commitId).append("\n");
         actualMessage.append("Build date: ").append(LocalDate.now().toString()).append("\n");
         actualMessage.append(log).append("\n");
         assertEquals(message, actualMessage.toString());
@@ -149,7 +149,7 @@ public class ContinuousIntegrationServerTest {
     public void writeLogNegative(@TempDir Path path) {
         File dir = path.toFile();
         ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(dir);
-        String buildId = "test";
+        String commitId = "test";
         String log = "Text in file";
 
         File testFile = new File(dir.getPath() + "/1.log");
@@ -160,7 +160,7 @@ public class ContinuousIntegrationServerTest {
             assertTrue(false);
         }
 
-        continuousIntegrationServer.storeBuildLog(log, buildId);
+        continuousIntegrationServer.storeBuildLog(log, commitId);
 
         assertEquals(0, testFile.length());
     }
@@ -175,13 +175,13 @@ public class ContinuousIntegrationServerTest {
     public void writeLogSeveral(@TempDir Path path) {
         File dir = path.toFile();
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
-        String buildId = "test";
+        String commitId = "test";
         String log = "Text in file";
         
-        ciServer.storeBuildLog(log, buildId + " 1");
-        ciServer.storeBuildLog(log, buildId + " 2");
-        ciServer.storeBuildLog(log, buildId + " 3");
-        ciServer.storeBuildLog(log, buildId + " 4");
+        ciServer.storeBuildLog(log, commitId + " 1");
+        ciServer.storeBuildLog(log, commitId + " 2");
+        ciServer.storeBuildLog(log, commitId + " 3");
+        ciServer.storeBuildLog(log, commitId + " 4");
 
         File log1 = new File(dir.getPath() + "/1.log");
         File log2 = new File(dir.getPath() + "/2.log");
