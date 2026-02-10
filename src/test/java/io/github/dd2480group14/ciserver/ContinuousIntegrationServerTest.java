@@ -164,6 +164,37 @@ public class ContinuousIntegrationServerTest {
 
         assertEquals(0, testFile.length());
     }
+
+    /**
+     * Create and store several log files
+     * to test that they are named properly.
+     * Should be named 1.log, 2.log, 3.log and 
+     * 4.log
+     */ 
+    @Test
+    public void writeLogSeveral(@TempDir Path path) {
+        File dir = path.toFile();
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
+        String buildId = "test";
+        String log = "Text in file";
+        
+        ciServer.storeBuildLog(log, buildId + " 1");
+        ciServer.storeBuildLog(log, buildId + " 2");
+        ciServer.storeBuildLog(log, buildId + " 3");
+        ciServer.storeBuildLog(log, buildId + " 4");
+
+        File log1 = new File(dir.getPath() + "/1.log");
+        File log2 = new File(dir.getPath() + "/2.log");
+        File log3 = new File(dir.getPath() + "/3.log");
+        File log4 = new File(dir.getPath() + "/4.log");
+
+        assertTrue(log1.exists());
+        assertTrue(log2.exists());
+        assertTrue(log3.exists());
+        assertTrue(log4.exists());
+        
+    }
+
 	/**
 	 * Creates a temporary directory with
 	 * a file one level down. Verifies

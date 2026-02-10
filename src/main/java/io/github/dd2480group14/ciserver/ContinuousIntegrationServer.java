@@ -14,6 +14,7 @@ import java.util.List;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.DrbgParameters.NextBytes;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Request;
@@ -217,11 +218,14 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     private int getLogFilesNextNumber() {
         Path logsFolderPath = logsFolder.toPath();
 
-        try (Stream<Path> logFiles = Files.list(logsFolderPath)){
-            return (int)logFiles.filter(fileName -> fileName.endsWith(".log")).count() + 1;
+        List<Path> fileList;
+        try (Stream<Path> logFiles = Files.walk(logsFolderPath)){
+            fileList = logFiles.filter(fileName -> fileName.getFileName().toString().endsWith(".log")).toList();
         } catch (IOException e) {
             return -1;
         }
+
+        return fileList.size() + 1;
     }
 
     /**
@@ -236,6 +240,8 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     void storeBuildLog(String log, String buildId) {
         StringBuilder fileName = new StringBuilder();
         int nextNumber = getLogFilesNextNumber();
+        nextNumber = (nextNumber == -1) ? 1 : nextNumber;
+
         fileName.append(logsFolder.getPath()).append("/").append(nextNumber).append(".log");
         File logFile = new File(fileName.toString());
 
