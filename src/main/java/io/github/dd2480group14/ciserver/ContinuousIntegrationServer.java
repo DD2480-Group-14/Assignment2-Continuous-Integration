@@ -326,7 +326,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         String fullText = getBuildLog(buildId);
         String commitId = StringUtils.substringBetween(fullText, "Commit ID: ", "\n");
         String date = StringUtils.substringBetween(fullText, "Build date: ", "\n");
-        String output = "<tr><td><a href=\"" + buildId + "\"</a>" + buildId + "</td>" 
+        String output = "<tr><td><a href=\"/logs/" + buildId + "\"</a>" + buildId + "</td>" 
             + "<td>" + date + "</td>" +  "<td>" + commitId + "</td></tr>";
         return output;
     }

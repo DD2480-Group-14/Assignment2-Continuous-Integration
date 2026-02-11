@@ -54,7 +54,7 @@ public class ContinuousIntegrationServerTest {
         String message = "Commit ID: " + commitId
 					   + "\nBuild date: " + buildDate
 					   + "\nAdditional log content\n";
-        String summary = "<tr><td><a href=\"1\"</a>1</td><td>" + buildDate + "</td><td>" + commitId + "</td></tr>";
+        String summary = "<tr><td><a href=\"/logs/1\"</a>1</td><td>" + buildDate + "</td><td>" + commitId + "</td></tr>";
 
         File dir = path.toFile();
         File log = new File(dir.getPath() + "/1.log");
@@ -90,7 +90,7 @@ public class ContinuousIntegrationServerTest {
 		String commitId = "123";
         String message = "Commit ID: " + commitId
 					   + "\nAdditional log content\n";
-        String summary = "<tr><td><a href=\"1\"</a>1</td><td>" + null + "</td><td>" + commitId + "</td></tr>";
+        String summary = "<tr><td><a href=\"/logs/1\"</a>1</td><td>" + null + "</td><td>" + commitId + "</td></tr>";
 
         File dir = path.toFile();
         File log = new File(dir.getPath() + "/1.log");
@@ -381,8 +381,8 @@ public class ContinuousIntegrationServerTest {
         }
 
         String logListFirst = "<table><tr><td> Build ID </td><td> Date </td><td> Commit ID </td></tr>";
-        String logListSecond = "<tr><td><a href=\"1\"</a>1</td><td>" + LocalDate.now().toString() + "</td><td>1</td></tr>";
-        String logListThird = "<tr><td><a href=\"2\"</a>2</td><td>" + LocalDate.now().toString() + "</td><td>2</td></tr>";
+        String logListSecond = "<tr><td><a href=\"/logs/1\"</a>1</td><td>" + LocalDate.now().toString() + "</td><td>1</td></tr>";
+        String logListThird = "<tr><td><a href=\"/logs/2\"</a>2</td><td>" + LocalDate.now().toString() + "</td><td>2</td></tr>";
 
         String logListFourth = "</table>";
         String logListStyle = "<style>table, th, td {border: 1px solid black;border-collapse: collapse;text-align: center;}</style>";
