@@ -187,17 +187,15 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             String ref = jsonObject.getString("ref");
             String branch = ref.replace("refs/heads/", "");
 
+            JSONObject pusher = jsonObject.getJSONObject("pusher");
+            String author = pusher.getString("name");
+
             // Repository owner
             JSONObject ownerObject = repo.optJSONObject("owner");
             String owner = ownerObject != null ?
                     ownerObject.optString("login", "Unknown") :
                     "Unknown";
 
-            // Repository name
-            String repoName = repo.optString("name", "Unknown");
-
-            // Default values
-            String author = "Unknown";
             String commitMessage = "No commit message";
 
             // Safe commit parsing
@@ -207,11 +205,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                 JSONObject latestCommit = commits.getJSONObject(0);
 
                 commitMessage = latestCommit.optString("message", "No commit message");
-
-                JSONObject authorObj = latestCommit.optJSONObject("author");
-                if (authorObj != null) {
-                    author = authorObj.optString("name", "Unknown");
-                }
             }
             return new PushEventInfo(
                     author,
