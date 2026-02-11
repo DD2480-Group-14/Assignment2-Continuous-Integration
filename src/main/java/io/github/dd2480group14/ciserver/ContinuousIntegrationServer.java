@@ -1,6 +1,5 @@
 package io.github.dd2480group14.ciserver;
 
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -21,8 +20,6 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -224,8 +221,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     PushEventInfo extractPushInfo(JSONObject jsonObject) throws IllegalArgumentException{
         try {
             JSONObject repo = jsonObject.getJSONObject("repository");
-            String repositoryURL = repo.getString("clone_url");
-            String repositoryName = repo.getString("name");
+            String repoURL = repo.getString("clone_url");
 
             String SHA = jsonObject.getString("after");
 
@@ -245,7 +241,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                 commitMessage = "N/A";
             }
 
-            return new PushEventInfo(author, repositoryURL, repositoryName, SHA, branch, commitMessage);
+            return new PushEventInfo(author, repoURL, SHA, branch, commitMessage);
         } catch (JSONException e) {
             throw new IllegalArgumentException("Invalid Github push payload", e);
         }
