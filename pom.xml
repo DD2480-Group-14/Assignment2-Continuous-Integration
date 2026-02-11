@@ -38,6 +38,12 @@
       <scope>compile</scope>
   </dependency>
 
+  <dependency>
+    <groupId>com.squareup.okhttp3</groupId>
+    <artifactId>okhttp</artifactId>
+    <version>4.12.0</version>
+  </dependency>
+
   <!-- Source: https://mvnrepository.com/artifact/commons-io/commons-io -->
   <dependency>
     <groupId>commons-io</groupId>
