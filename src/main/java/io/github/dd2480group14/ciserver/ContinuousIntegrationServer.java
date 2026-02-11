@@ -27,12 +27,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /** 
- Skeleton of a ContinuousIntegrationServer which acts as webhook
- See the Jetty documentation for API documentation of those classes.
-*/
+ *A ContinuousIntegrationServer which acts as webhook.
+ */
 public class ContinuousIntegrationServer extends AbstractHandler {
     private final File logsFolder;
 
+    /**
+     * Constructs a new ContinuousIntegrationServer instance with the default logs folder path.
+     */
     public ContinuousIntegrationServer() {
         logsFolder = new File("logs");
 
@@ -45,6 +47,11 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         }
     }
     
+    /**
+     * Constructs a new ContinuousIntegrationServer instance with a specified logs folder path.
+     * 
+     * @param logsFolder The specified logs folder.
+     */
     public ContinuousIntegrationServer(File logsFolder) {
         this.logsFolder = logsFolder;
 
@@ -84,7 +91,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         }
     }
 
-
     /**
      * Handles incoming webhook notifications from Github 
      * by parsing the JSON payload and trigger the build process.
@@ -123,7 +129,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
-    
+
     private void handleGet(String target,
                        Request baseRequest,
                        HttpServletRequest request,
@@ -276,7 +282,14 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         return runCommand(testCommand, directory);
     }
 
-    String getBuildLog(String buildId) throws IOException, IllegalArgumentException {
+    /**
+     * Returns the log with the specified build ID.
+     * @param buildId The build ID of the log
+     * @return The log as a String
+     * @throws IOException If file does not exist.
+     * @throws IllegalArgumentException If argument leads to a path outside of the logs folder.
+     */
+    public String getBuildLog(String buildId) throws IOException, IllegalArgumentException {
         File file = new File(logsFolder.getPath() + "/" + buildId + ".log");
 		if (!isInLogDirectory(file)) {
 			throw new IllegalArgumentException("Build log must be in logs directory");
@@ -291,6 +304,11 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         return stringBuilder.toString();
     }
 
+    /**
+     * Checks wheter the given file is inside the log directory.
+     * @param file The specified file.
+     * @return True if the file is in the log directory.
+     */
     private boolean isInLogDirectory(File file) {
 		Path realFilePath = file.toPath().toAbsolutePath().normalize();
 		Path realLogPath = logsFolder.toPath().toAbsolutePath().normalize();
@@ -298,15 +316,23 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 		return result;
     };
 
-    String getBuilds() {
-        return "Builds";
+    /**
+     * Returns a string containing information of all logs in the log directory.
+     * @return A string containing information of all logs in the log directory.
+     */
+    public String getBuilds() {
+        return "TODO";
     }
 
-    void storeBuildLog(String log) {
+    public void storeBuildLog(String log) {
         return;
     }
  
-    // used to start the CI server in command line
+    /**
+     * Starts a new server with port 8080 and the default log directory.
+     * @param args Not used
+     * @throws Exception
+     */
     public static void main(String[] args) throws Exception
     {
         Server server = new Server(8080);
