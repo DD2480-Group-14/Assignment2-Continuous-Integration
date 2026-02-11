@@ -26,7 +26,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.time.LocalDate;
+
 
 /** 
  *A ContinuousIntegrationServer which acts as webhook.
@@ -304,6 +307,25 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             }
         } 
         return stringBuilder.toString();
+    }
+
+    /**
+     * Returns a summary of the log with the given build ID.
+     * @param buildId Build ID of the log
+     * @return The summary of the log with the following format:
+     * <br>
+     * "[Build ID] [Date] [commit ID]".
+     * <br> <br>
+     * Metadata is replaced by "null" if it does not exist.
+     * @throws IOException If the file does not exist
+     * @throws IllegalArgumentException If the argument leads to a path outisde of the logs folder
+     */
+    String getBuildLogSummary(String buildId) throws IOException, IllegalArgumentException {
+        String fullText = getBuildLog(buildId);
+        String commitId = StringUtils.substringBetween(fullText, "Commit ID: ", "\n");
+        String date = StringUtils.substringBetween(fullText, "Build date: ", "\n");
+        String output = buildId + " " + date + " " + commitId;
+        return output;
     }
 
     /**
