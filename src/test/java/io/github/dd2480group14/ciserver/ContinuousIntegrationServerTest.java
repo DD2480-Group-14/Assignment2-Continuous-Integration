@@ -211,9 +211,10 @@ public class ContinuousIntegrationServerTest {
 	 * exists
 	 */
 	@Test
-	public void runGitClone() throws IOException, InterruptedException {
+	public void runGitClone(@TempDir Path path) throws IOException, InterruptedException {
 		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
-		String url = "https://github.com/octocat/Hello-World.git";
+		continuousIntegrationServer.runCommand(List.of("git", "init"), path.toFile());
+		String url = path.toString();
 		File tempDirectory = continuousIntegrationServer.gitClone(url, null);
 		boolean gitFolderExists = new File(tempDirectory, ".git").exists();
 		assertTrue(gitFolderExists);
