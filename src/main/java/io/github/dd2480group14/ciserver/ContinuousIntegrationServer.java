@@ -310,27 +310,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         return stringBuilder.toString();
     }
 
-        
-    /**
-     * Returns a summary of the log with the given build ID.
-     * @param buildId Build ID of the log
-     * @return The summary of the log with the following format:
-     * <br>
-     * "[Build ID] [Date] [commit ID]".
-     * <br> <br>
-     * Metadata is replaced by "null" if it does not exist.
-     * @throws IOException If the file does not exist
-     * @throws IllegalArgumentException If the argument leads to a path outisde of the logs folder
-     */
-    String getBuildLogSummary(String buildId) throws IOException, IllegalArgumentException {
-        String fullText = getBuildLog(buildId);
-        String commitId = StringUtils.substringBetween(fullText, "Commit ID: ", "\n");
-        String date = StringUtils.substringBetween(fullText, "Build date: ", "\n");
-        String output = "<tr><td><a href=\"/logs/" + buildId + "\"</a>" + buildId + "</td>" 
-            + "<td>" + date + "</td>" +  "<td>" + commitId + "</td></tr>";
-        return output;
-    }
-
     /**
      * Checks wheter the given file is inside the log directory.
      * @param file The specified file.
@@ -343,29 +322,69 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 		return result;
     };
 
-    private String getBuildsAsHTML(List<String> buildIds) throws IOException {
-        StringBuilder allLogs = new StringBuilder();
-
-        allLogs.append("<table><tr><td> Build ID </td><td> Date </td><td> Commit ID </td></tr>");
-
-        for (String buildId : buildIds) {
-            allLogs.append(getBuildLogSummary(buildId));
-        }
-        allLogs.append("</table>");
-        allLogs.append("<style>table, th, td {border: 1px solid black;border-collapse: collapse;text-align: center;}</style>");
-        return allLogs.toString();
+    /**
+     * Returns an HTML table row containing a summary of the
+     * log with the given build ID.
+     * @param buildId Build ID of the log
+     * @return The summary of the log with the following format:
+     * <tr>
+     *  <td> [Build ID (as a href)] </td>
+     *  <td> [Date] </td>
+     *  <td> [Commit ID] </td>
+     * </tr>
+     * Metadata is replaced by "null" if it does not exist.
+     * @throws IOException If the file does not exist
+     * @throws IllegalArgumentException If the argument leads to a path outisde of the logs folder
+     */
+    String getBuildLogHTMLTableRow(String buildId) throws IOException, IllegalArgumentException {
+        String fullText = getBuildLog(buildId);
+        String commitId = StringUtils.substringBetween(fullText, "Commit ID: ", "\n");
+        String date = StringUtils.substringBetween(fullText, "Build date: ", "\n");
+        String output = "<tr><td><a href=\"/logs/" + buildId + "\"</a>" + buildId + "</td>" 
+        + "<td>" + date + "</td>" +  "<td>" + commitId + "</td></tr>";
+        return output;
     }
 
     /**
-     * Returns a string containing information of all logs in the log directory.
+     * Creates HTML output based on Build IDs. The HTML output also
+     * contains a style tag used to put borders and centralize text
+     * in cells.
+     *
+     * @param buildIds The list of Build IDs currently in the log folder
+     * @return An HTML table containing Build ID, date and Commit ID for all builds
+     */ 
+    private String createHTMLTableWithLogSummaries(List<String> buildIds) {
+        StringBuilder logTable = new StringBuilder();
+
+        logTable.append("<table><tr><td> Build ID </td><td> Date </td><td> Commit ID </td></tr>");
+
+        for (String buildId : buildIds) {
+            try {
+                logTable.append(getBuildLogHTMLTableRow(buildId));
+            } catch (IOException e) {
+                continue;
+            }
+        }
+        logTable.append("</table>");
+        logTable.append("<style>table, th, td {border: 1px solid black;border-collapse: collapse;text-align: center;}</style>");
+        return logTable.toString();
+    }
+
+    /**
+     * Searches the log directory for log files, and returns a string.
+     * The string contains a HTML table, with rows for each log entry
+     * and cells with Build ID, date and Commit ID.
      * @return A string containing information of all logs in the log directory.
      */
     public String getBuilds() {
         Path logsFolderPath = logsFolder.toPath();
 
+        // List to store all build IDs found in the log folder
         List<String> buildIds = new ArrayList<>();
 
-		    try ( Stream<Path> paths = Files.walk(logsFolderPath)) {
+        // Iterate the log directory and save file names that have
+        // the ".log" extension
+		try ( Stream<Path> paths = Files.walk(logsFolderPath)) {
             for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
                 String buildId = path.getFileName().toString();
                 
@@ -373,24 +392,24 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                     continue;
                 }
 
+                // Extract the file name without extension and
+                // append to buildIds
                 buildId = buildId.substring(0, buildId.length() - 4);
                 buildIds.add(buildId);
             }
-		    } catch (Exception e) {
+	    } catch (Exception e) {
             return null;
         }
 
         // Sort the buildId list to display the 
         // builds in ascending order
         buildIds.sort(Comparator.comparingInt(Integer::parseInt));
-        String allLogs;
-        try {
-            allLogs = getBuildsAsHTML(buildIds);
-        } catch (IOException e) {
-            return null;
-        }
+        String logTable;
+        // Get an HTML table containing summaries for 
+        // the found buildIds
+        logTable = createHTMLTableWithLogSummaries(buildIds);
 
-        return allLogs;
+        return logTable;
     }
 
     /**

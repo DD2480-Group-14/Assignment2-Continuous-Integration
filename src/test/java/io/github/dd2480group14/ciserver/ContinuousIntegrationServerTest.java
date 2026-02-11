@@ -74,7 +74,7 @@ public class ContinuousIntegrationServerTest {
 
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
         assertEquals(message, ciServer.getBuildLog("1"));
-        assertEquals(summary, ciServer.getBuildLogSummary("1"));
+        assertEquals(summary, ciServer.getBuildLogHTMLTableRow("1"));
     }
 
 	/**
@@ -110,7 +110,7 @@ public class ContinuousIntegrationServerTest {
 
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
         assertEquals(message, ciServer.getBuildLog("1"));
-        assertEquals(summary, ciServer.getBuildLogSummary("1"));
+        assertEquals(summary, ciServer.getBuildLogHTMLTableRow("1"));
     }
 
     /**
@@ -123,7 +123,7 @@ public class ContinuousIntegrationServerTest {
         File dir = path.toFile();
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
 		assertThrows(FileNotFoundException.class, () -> ciServer.getBuildLog("1"));
-		assertThrows(FileNotFoundException.class, () -> ciServer.getBuildLogSummary("1"));
+		assertThrows(FileNotFoundException.class, () -> ciServer.getBuildLogHTMLTableRow("1"));
     }
 
 
