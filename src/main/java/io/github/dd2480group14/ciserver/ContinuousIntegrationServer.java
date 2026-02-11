@@ -116,9 +116,18 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                 String logText = getBuildLog(subString);
                 response.getWriter().write(logText);
                 return;
-            } catch (Exception e) {
-                response.sendError(404);
+            } catch (FileNotFoundException e) {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
                 return;
+            } catch (IllegalArgumentException e) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            } catch (IOException e) {
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                return;
+            } catch (Exception e) {
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                return;   
             }
         }
 
