@@ -30,15 +30,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.time.LocalDate;
-
 import io.github.cdimascio.dotenv.Dotenv;
-
-import java.net.URLDecoder;
 
 /** 
  *A ContinuousIntegrationServer which acts as webhook.
@@ -48,25 +43,11 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     private final String signature;
     
     
-    /*
-     * Gets environment variable from .env
-     */
-    private String getEnvVariable(String envVariableName) throws IllegalStateException {
-		if (envVariableName == null) {
-			throw new IllegalArgumentException("environment variable name cant be empty");
-		}
-		Dotenv dotenv = Dotenv.load();
-		String result = dotenv.get(envVariableName);
-		if (result == null || result.isEmpty()) {
-			throw new IllegalStateException(String.format("Environment variable: %s must be set", envVariableName));
-		}
-		return result;
-    }
 
     /**
      * Constructs a new ContinuousIntegrationServer instance with the default logs folder path.
      */
-    public ContinuousIntegrationServer() {
+    public ContinuousIntegrationServer(String signature) {
         logsFolder = new File("logs");
 
         if (!logsFolder.exists()) {
@@ -76,7 +57,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         if (logsFolder.isFile()) {
             throw new IllegalArgumentException("logsFolder can not be an already existing file.");
         }
-		signature = getEnvVariable("WEBHOOK_SIGNATURE");
+		this.signature = signature;
     }
     
     /**
@@ -84,7 +65,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * 
      * @param logsFolder The specified logs folder.
      */
-    public ContinuousIntegrationServer(File logsFolder) {
+    public ContinuousIntegrationServer(File logsFolder, String signature) {
         this.logsFolder = logsFolder;
 
         if (!logsFolder.exists()) {
@@ -94,7 +75,8 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         if (logsFolder.isFile()) {
             throw new IllegalArgumentException("logsFolder can not be an already existing file.");
         }
-		signature = getEnvVariable("WEBHOOK_SIGNATURE");
+		this.signature = signature;
+		
     }
 
     public void handle(String target,
@@ -170,7 +152,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
-
 
     /**
      * Validates the incoming github webhook signature of the
@@ -500,8 +481,13 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      */
     public static void main(String[] args) throws Exception
     {
+		Dotenv dotenv = Dotenv.load();
+		String webhookSignature = dotenv.get("WEBHOOK_SIGNATURE");
+		if (webhookSignature == null || webhookSignature.isEmpty()) {
+			throw new IllegalStateException("env variable WEBHOOK_SIGNATURE must be set in .env file");
+		}
         Server server = new Server(8080);
-        server.setHandler(new ContinuousIntegrationServer()); 
+        server.setHandler(new ContinuousIntegrationServer(webhookSignature)); 
         server.start();
         server.join();
     }
