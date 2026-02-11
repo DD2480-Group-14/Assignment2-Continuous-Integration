@@ -2,7 +2,6 @@ package io.github.dd2480group14.ciserver;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
@@ -140,7 +139,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * @return a PushEventInfo record containing extracted data.
      * @throws IllegalArgumentException if payload is not valid.
      */
-    public PushEventInfo extractPushInfo(JSONObject jsonObject){
+    private PushEventInfo extractPushInfo(JSONObject jsonObject) throws IllegalArgumentException{
         try {
             JSONObject repo = jsonObject.getJSONObject("repository");
             String repoURL = repo.getString("clone_url");
