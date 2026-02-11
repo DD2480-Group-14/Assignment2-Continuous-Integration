@@ -1,18 +1,21 @@
 package io.github.dd2480group14.ciserver;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.util.List;
 
+import org.json.JSONObject;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Unit test for Conitinuous Integration Server.
@@ -106,6 +109,56 @@ public class ContinuousIntegrationServerTest {
 		assertThrows(IOException.class, () -> continuousIntegrationServer.runCommand(command, directory));
 	}
 
+	/**
+	 * Verifies that a push payload is correctly parsed.
+	 * The PushEventInfo should have the correct 
+	 * repository URL, commit SHA, branch name, author and commit message.
+	 */
+	@Test
+	public void testExtractPushInfo() {
+		String payload = """
+			{
+				"ref": "refs/heads/example",
+				"after": "123123",
+				"repository": {
+					"clone_url": "https://github.com/test/example.git"
+				},
+				"pusher": {
+					"name": "test-user"
+				},
+				"commits": [
+					{
+						"message": "Initial commit"
+					}
+				]
+			}
+			""";
+
+		JSONObject json = new JSONObject(payload);
+
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+		PushEventInfo info = continuousIntegrationServer.extractPushInfo(json);
+
+		assertEquals("https://github.com/test/example.git", info.repoURL());
+		assertEquals("123123", info.SHA());
+		assertEquals("example", info.branch());
+		assertEquals("test-user", info.author());
+		assertEquals("Initial commit", info.commitMessage());
+	}
+
+	/**
+	 * Should throw an exception when payload lacks required fields.
+	 */
+	@Test
+	public void testNonPushWebhookEvent() {
+		String payload = "{}";
+
+		JSONObject json = new JSONObject(payload);
+
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+
+		assertThrows(IllegalArgumentException.class, () -> continuousIntegrationServer.extractPushInfo(json));
+	}
 	/**
 	 * Clones a git repository and
 	 * verifies that the .git directory
