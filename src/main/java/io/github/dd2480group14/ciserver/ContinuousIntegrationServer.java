@@ -30,6 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -221,43 +222,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
         response.sendError(404);
     }
-
-    /**
-     * Extracts information from Github push webhook payload.
-     * 
-     * @param jsonObject the JSON payload recieved from Github push event.
-     * @return a PushEventInfo record containing extracted data.
-     * @throws IllegalArgumentException if payload is not valid.
-     */
-    PushEventInfo extractPushInfo(JSONObject jsonObject) throws IllegalArgumentException{
-        try {
-            JSONObject repo = jsonObject.getJSONObject("repository");
-            String repoURL = repo.getString("clone_url");
-
-            String SHA = jsonObject.getString("after");
-
-            String ref = jsonObject.getString("ref");
-            String branch = ref.replace("refs/heads/", "");
-
-            JSONObject pusher = jsonObject.getJSONObject("pusher");
-            String author = pusher.getString("name");
-
-            String commitMessage;
-            
-            try {
-                JSONArray commits= jsonObject.getJSONArray("commits");
-                JSONObject latestCommit = commits.getJSONObject(0);
-                commitMessage = latestCommit.getString("message");
-            } catch (JSONException e) {
-                commitMessage = "N/A";
-            }
-
-            return new PushEventInfo(author, repoURL, SHA, branch, commitMessage);
-        } catch (JSONException e) {
-            throw new IllegalArgumentException("Invalid Github push payload", e);
-        }
-    }
-
 
     /**
      * Executes command in specificed directory 
