@@ -174,7 +174,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         response.sendError(404);
     }
 
-
     /**
      * Executes command in specificed directory 
      * @param command The command to run.
@@ -182,28 +181,28 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * @return Returns the terminal output after the command.
      */
     String runCommand(List<String> command, File directory) throws IOException, InterruptedException {
-	ProcessBuilder processBuilder = new ProcessBuilder(command);
-	processBuilder.directory(directory);
-	processBuilder.redirectErrorStream(true);
-	Process process = processBuilder.start();
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.directory(directory);
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
 
-	try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-		StringBuilder stringBuilder = new StringBuilder();
-		String line;
-		boolean firstLine = true;
-		while ((line = bufferedReader.readLine()) != null) {
-			if (!firstLine) {
-					stringBuilder.append("\n");
-			}
-			stringBuilder.append(line);
-			firstLine = false;
-		}
-		process.waitFor();
-		String output = stringBuilder.toString();
-		return output;
-	} finally {
-		process.destroy();
-	}
+        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            StringBuilder stringBuilder = new StringBuilder();
+            String line;
+            boolean firstLine = true;
+            while ((line = bufferedReader.readLine()) != null) {
+                if (!firstLine) {
+                        stringBuilder.append("\n");
+                }
+                stringBuilder.append(line);
+                firstLine = false;
+            }
+            process.waitFor();
+            String output = stringBuilder.toString();
+            return output;
+        } finally {
+            process.destroy();
+        }
     }
 
 
