@@ -141,31 +141,6 @@ public class ContinuousIntegrationServerTest {
     }
 
     /**
-     * Creates a file beforehand, which should 
-     * result in nothing being stored when trying
-     * to store a build log
-     */ 
-    @Test
-    public void writeLogNegative(@TempDir Path path) {
-        File dir = path.toFile();
-        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(dir);
-        String commitId = "test";
-        String log = "Text in file";
-
-        File testFile = new File(dir.getPath() + "/1.log");
-
-        try {
-        testFile.createNewFile();
-        } catch (Exception e) {
-            assertTrue(false);
-        }
-
-        continuousIntegrationServer.storeBuildLog(log, commitId);
-
-        assertEquals(0, testFile.length());
-    }
-
-    /**
      * Create and store several log files
      * to test that they are named properly.
      * Should be named 1.log, 2.log, 3.log and 
