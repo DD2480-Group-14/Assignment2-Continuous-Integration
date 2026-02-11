@@ -1,0 +1,19 @@
+package com.group14.app;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
+
+/**
+ * Unit test for simple App.
+ */
+public class AppTest {
+
+    /**
+     * Small test that always fail
+     */
+    @Test
+    public void shouldAnswerWithTrue() {
+        assertTrue(false);
+    }
+}
