@@ -54,6 +54,7 @@ public class ContinuousIntegrationServerTest {
         String message = "Commit ID: " + commitId
 					   + "\nBuild date: " + buildDate
 					   + "\nAdditional log content\n";
+        String summary = "<tr><td><a href=\"1\"</a>1</td><td>" + buildDate + "</td><td>" + commitId + "</td></tr>";
 
         File dir = path.toFile();
         File log = new File(dir.getPath() + "/1.log");
@@ -73,7 +74,7 @@ public class ContinuousIntegrationServerTest {
 
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
         assertEquals(message, ciServer.getBuildLog("1"));
-        assertEquals("1 " + buildDate + " " + commitId, ciServer.getBuildLogSummary("1"));
+        assertEquals(summary, ciServer.getBuildLogSummary("1"));
     }
 
 	/**
@@ -89,6 +90,7 @@ public class ContinuousIntegrationServerTest {
 		String commitId = "123";
         String message = "Commit ID: " + commitId
 					   + "\nAdditional log content\n";
+        String summary = "<tr><td><a href=\"1\"</a>1</td><td>" + null + "</td><td>" + commitId + "</td></tr>";
 
         File dir = path.toFile();
         File log = new File(dir.getPath() + "/1.log");
@@ -108,7 +110,7 @@ public class ContinuousIntegrationServerTest {
 
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
         assertEquals(message, ciServer.getBuildLog("1"));
-        assertEquals("1 " + null + " " + commitId, ciServer.getBuildLogSummary("1"));
+        assertEquals(summary, ciServer.getBuildLogSummary("1"));
     }
 
     /**
@@ -378,14 +380,17 @@ public class ContinuousIntegrationServerTest {
             assertTrue(false);
         }
 
-        String logListHeader = "<p> Build ID | Date | Commit ID </p><br>";
-        String logList = "<a href=\"1\">1 " 
-        + LocalDate.now().toString() 
-        + " 1</a><br><a href=\"2\">2 " 
-        + LocalDate.now().toString() 
-        + " 2" + "</a><br>";
+        String logListFirst = "<table><tr><td> Build ID </td><td> Date </td><td> Commit ID </td></tr>";
+        String logListSecond = "<tr><td><a href=\"1\"</a>1</td><td>" + LocalDate.now().toString() + "</td><td>1</td></tr>";
+        String logListThird = "<tr><td><a href=\"2\"</a>2</td><td>" + LocalDate.now().toString() + "</td><td>2</td></tr>";
+
+        String logListFourth = "</table>";
+        String logListStyle = "<style>table, th, td {border: 1px solid black;border-collapse: collapse;text-align: center;}</style>";
+
+        String fullLogList = logListFirst + logListSecond + logListThird + logListFourth + logListStyle;
+
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
-        assertEquals(logListHeader + logList, ciServer.getBuilds());
+        assertEquals(fullLogList, ciServer.getBuilds());
     }
 
     /**
@@ -412,7 +417,8 @@ public class ContinuousIntegrationServerTest {
         }
 
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer();
-        assertEquals("<p> Build ID | Date | Commit ID </p><br>", ciServer.getBuilds());
+        String logListEmpty = "<table><tr><td> Build ID </td><td> Date </td><td> Commit ID </td></tr></table><style>table, th, td {border: 1px solid black;border-collapse: collapse;text-align: center;}</style>";
+        assertEquals(logListEmpty, ciServer.getBuilds());
     }
 }
 

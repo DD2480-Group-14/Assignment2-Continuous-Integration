@@ -326,7 +326,8 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         String fullText = getBuildLog(buildId);
         String commitId = StringUtils.substringBetween(fullText, "Commit ID: ", "\n");
         String date = StringUtils.substringBetween(fullText, "Build date: ", "\n");
-        String output = buildId + " " + date + " " + commitId;
+        String output = "<tr><td><a href=\"" + buildId + "\"</a>" + buildId + "</td>" 
+            + "<td>" + date + "</td>" +  "<td>" + commitId + "</td></tr>";
         return output;
     }
 
@@ -342,14 +343,25 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 		return result;
     };
 
+    private String getBuildsAsHTML(List<String> buildIds) throws IOException {
+        StringBuilder allLogs = new StringBuilder();
+
+        allLogs.append("<table><tr><td> Build ID </td><td> Date </td><td> Commit ID </td></tr>");
+
+        for (String buildId : buildIds) {
+            allLogs.append(getBuildLogSummary(buildId));
+        }
+        allLogs.append("</table>");
+        allLogs.append("<style>table, th, td {border: 1px solid black;border-collapse: collapse;text-align: center;}</style>");
+        return allLogs.toString();
+    }
+
     /**
      * Returns a string containing information of all logs in the log directory.
      * @return A string containing information of all logs in the log directory.
      */
     public String getBuilds() {
         Path logsFolderPath = logsFolder.toPath();
-
-        StringBuilder allLogs = new StringBuilder();
 
         List<String> buildIds = new ArrayList<>();
 
@@ -371,17 +383,14 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         // Sort the buildId list to display the 
         // builds in ascending order
         buildIds.sort(Comparator.comparingInt(Integer::parseInt));
-
-        allLogs.append("<p> Build ID | Date | Commit ID </p><br>");
+        String allLogs;
         try {
-            for(String buildId : buildIds) {
-                String buildLogSummary = getBuildLogSummary(buildId);
-                allLogs.append("<a href=\"").append(buildId).append("\">").append(buildLogSummary).append("</a><br>");
-            }
+            allLogs = getBuildsAsHTML(buildIds);
         } catch (IOException e) {
             return null;
         }
-        return allLogs.toString();
+
+        return allLogs;
     }
 
     /**
