@@ -11,6 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -18,10 +20,13 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.codec.digest.HmacUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.Request;
@@ -35,7 +40,7 @@ import org.json.JSONObject;
  */
 public class ContinuousIntegrationServer extends AbstractHandler {
     private final File logsFolder;
-    private final String sha256Signature;
+    private final String signature;
     
     
     /**
@@ -65,7 +70,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         if (logsFolder.isFile()) {
             throw new IllegalArgumentException("logsFolder can not be an already existing file.");
         }
-	sha256Signature = getEnvVariable("SHA256_SIGNATURE");
+	signature = getEnvVariable("SIGNATURE");
     }
     
     /**
@@ -83,7 +88,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         if (logsFolder.isFile()) {
             throw new IllegalArgumentException("logsFolder can not be an already existing file.");
         }
-	sha256Signature = getEnvVariable("SHA256_SIGNATURE");
+	signature = getEnvVariable("SIGNATURE");
     }
 
     public void handle(String target,
@@ -131,11 +136,8 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         String githubEvent = request.getHeader("X-GitHub-Event");
         String githubSignature = request.getHeader("X-Hub-Signature-256");
         try {
-	    if(!githubSignatureIsValid(githubSignature)) {
-				response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-				return;
-	    }
             String body = IOUtils.toString(request.getReader());
+	    validateGithubSignature(githubSignature, body);
             String urlDecoded = URLDecoder.decode(body, StandardCharsets.UTF_8);
             String jsonStr = urlDecoded.replace("payload=", "");
             System.out.println(jsonStr);
@@ -150,23 +152,30 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                 String testLog = runTests(gitDirectory);
                 storeBuildLog(testLog, info.SHA());
                 
+                // TO DO: Run CI Pipeline
+
             } else {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().println("No push event recieved. Event ignored.");
             }
-
-        } catch (IllegalArgumentException | JSONException | InterruptedException e) {
+        } catch (SecurityException e) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+	}
+	catch (IllegalArgumentException | JSONException | InterruptedException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
 
-    private boolean githubSignatureIsValid(String githubSignature) {
+    private void validateGithubSignature(String githubSignature, String body) {
 		if (githubSignature == null || githubSignature.isEmpty()) {
 			throw new IllegalArgumentException("Github Signature cant be null");
 		}
-		boolean result = sha256Signature.equals(githubSignature);
-		return result;
-	}
+		String calculatedHmac = new HmacUtils("HmacSHA256", signature).hmacHex(body);
+		boolean signaturesAreEqual = githubSignature.equals("sha256=" + calculatedHmac);
+		if (!signaturesAreEqual) {
+			throw new SecurityException("Signature does not match webhook");
+		}
+    }
 
     private void handleGet(String target,
                        Request baseRequest,
