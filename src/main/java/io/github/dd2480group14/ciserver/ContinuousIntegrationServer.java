@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,6 +26,13 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import org.apache.commons.lang3.StringUtils;
+
+import java.time.LocalDate;
+
+
+import java.net.URLDecoder;
 
 /** 
  *A ContinuousIntegrationServer which acts as webhook.
@@ -110,7 +118,10 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
         try {
             String body = IOUtils.toString(request.getReader());
-            JSONObject jsonObject = new JSONObject(body);
+            String urlDecoded = URLDecoder.decode(body, StandardCharsets.UTF_8);
+            String jsonStr = urlDecoded.replace("payload=", "");
+            System.out.println(jsonStr);
+            JSONObject jsonObject = new JSONObject(jsonStr);
 
             if ("push".equals(githubEvent)) {
                 PushEventInfo info = extractPushInfo(jsonObject);
@@ -118,14 +129,18 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().println("Push event recieved.");
 
-                // TO DO: Run CI Pipeline
 
+
+                File gitDirectory = gitClone(info.repoURL(), info.SHA());
+                String testLog = runTests(gitDirectory);
+                storeBuildLog(testLog, info.SHA());
+                
             } else {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().println("No push event recieved. Event ignored.");
             }
 
-        } catch (IllegalArgumentException | JSONException e) {
+        } catch (IllegalArgumentException | JSONException | InterruptedException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
@@ -196,6 +211,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                     ownerObject.optString("login", "Unknown") :
                     "Unknown";
 
+
             String repoName = repo.optString("name", "Unknown");
 
             String commitMessage = "No commit message";
@@ -260,12 +276,18 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * Clones git repository into a temporary directory
      *
      * @param url The url of the repository
+     * @param branch The branch that we want
+     * @param commitId The specific commit ID. If null, the latest commit is used.
      * @return directory The temporary directory containing the repo
      */
-    File gitClone(String url) throws IOException, InterruptedException {
+    File gitClone(String url, String commitId) throws IOException, InterruptedException {
 		File directory = Files.createTempDirectory("repository").toFile();
-		List<String> command = List.of("git", "clone", url);
+		List<String> command = List.of("git", "clone", url, ".");
 		runCommand(command, directory);
+        if (commitId != null) {
+            command = List.of("git", "checkout", commitId);
+		    runCommand(command, directory);
+        }
 		return directory;
     }
 
@@ -332,6 +354,25 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     }
 
     /**
+     * Returns a summary of the log with the given build ID.
+     * @param buildId Build ID of the log
+     * @return The summary of the log with the following format:
+     * <br>
+     * "[Build ID] [Date] [commit ID]".
+     * <br> <br>
+     * Metadata is replaced by "null" if it does not exist.
+     * @throws IOException If the file does not exist
+     * @throws IllegalArgumentException If the argument leads to a path outisde of the logs folder
+     */
+    String getBuildLogSummary(String buildId) throws IOException, IllegalArgumentException {
+        String fullText = getBuildLog(buildId);
+        String commitId = StringUtils.substringBetween(fullText, "Commit ID: ", "\n");
+        String date = StringUtils.substringBetween(fullText, "Build date: ", "\n");
+        String output = buildId + " " + date + " " + commitId;
+        return output;
+    }
+
+    /**
      * Checks wheter the given file is inside the log directory.
      * @param file The specified file.
      * @return True if the file is in the log directory.
@@ -351,8 +392,59 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         return "TODO";
     }
 
-    public void storeBuildLog(String log) {
-        return;
+    /**
+     * Get the next number to be
+     * used for the name of a new
+     * log file
+     *
+     * @return The next number
+     */ 
+    private int getLogCount() {
+        Path logsFolderPath = logsFolder.toPath();
+
+        List<Path> fileList;
+        try (Stream<Path> logFiles = Files.walk(logsFolderPath)){
+            fileList = logFiles.filter(fileName -> fileName.getFileName().toString().endsWith(".log")).toList();
+        } catch (IOException e) {
+            return 0;
+        }
+
+        return fileList.size();
+    }
+
+    /**
+     * Stores a build log in a log file
+     * The log file is named in ascending
+     * order from the previously created
+     * log file.
+     *
+     * @param log The output from building the project
+     * @param commitId The commit id used to identify a specific log
+     */ 
+    public void storeBuildLog(String log, String commitId) {
+        StringBuilder fileName = new StringBuilder();
+        int nextNumber = getLogCount() + 1;
+
+        fileName.append(logsFolder.getPath()).append("/").append(nextNumber).append(".log");
+        File logFile = new File(fileName.toString());
+
+        if(logFile.exists()) {
+            return;
+        }
+
+        StringBuilder fullLog = new StringBuilder();
+        fullLog.append("Commit ID: ").append(commitId).append("\n");
+        fullLog.append("Build date: ").append(LocalDate.now().toString()).append("\n");
+        fullLog.append(log);
+        
+
+
+        try {
+            logFile.createNewFile();
+            Files.writeString(Path.of(fileName.toString()), fullLog.toString());
+        } catch (Exception e) {
+            return;
+        }
     }
  
     /**

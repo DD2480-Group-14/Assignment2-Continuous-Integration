@@ -7,6 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.json.JSONObject;
@@ -16,6 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import java.util.Scanner;
+
 
 /**
  * Unit test for Conitinuous Integration Server.
@@ -39,12 +43,18 @@ public class ContinuousIntegrationServerTest {
 
     /**
      * Creates a new server with a log folder with a 
-     * log with the given message. Retrieveing the log
-     * should return the same message.
+     * log with the given message. 
+	 * Retrieveing the log should return the same message.
+	 * Also, retrieving the summary should return the appropriate summary.
      */
     @Test
     public void getBuildLogPositive(@TempDir Path path) throws IOException {
-        String message = "Text in file\n";
+		String commitId = "123";
+		String buildDate = "2022-01-01";
+        String message = "Commit ID: " + commitId
+					   + "\nBuild date: " + buildDate
+					   + "\nAdditional log content\n";
+
         File dir = path.toFile();
         File log = new File(dir.getPath() + "/1.log");
         try {
@@ -63,12 +73,47 @@ public class ContinuousIntegrationServerTest {
 
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
         assertEquals(message, ciServer.getBuildLog("1"));
+        assertEquals("1 " + buildDate + " " + commitId, ciServer.getBuildLogSummary("1"));
     }
 
+	/**
+     * Creates a new server with a log folder with a 
+     * log with the given message. 
+	 * Retrieveing the log should return the same message.
+	 * Also, retrieving the summary should return the appropriate summary.
+	 * Note that build date field in the summary should be null
+	 * since it does not exist.
+     */
+    @Test
+    public void getBuildLogPositiveNoBuildDate(@TempDir Path path) throws IOException {
+		String commitId = "123";
+        String message = "Commit ID: " + commitId
+					   + "\nAdditional log content\n";
+
+        File dir = path.toFile();
+        File log = new File(dir.getPath() + "/1.log");
+        try {
+            log.createNewFile();
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(log, true))) {
+            
+            writer.write(message);
+            
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
+        assertEquals(message, ciServer.getBuildLog("1"));
+        assertEquals("1 " + null + " " + commitId, ciServer.getBuildLogSummary("1"));
+    }
 
     /**
      * Creates a new server with empty log folder.
-     * Trying to retreive a log should throw
+     * Trying to retreive a log (or its summary) should throw
      * NoSuchFileException.
      */
     @Test
@@ -76,6 +121,7 @@ public class ContinuousIntegrationServerTest {
         File dir = path.toFile();
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
 		assertThrows(FileNotFoundException.class, () -> ciServer.getBuildLog("1"));
+		assertThrows(FileNotFoundException.class, () -> ciServer.getBuildLogSummary("1"));
     }
 
 
@@ -160,22 +206,83 @@ public class ContinuousIntegrationServerTest {
 		assertThrows(IllegalArgumentException.class, () -> continuousIntegrationServer.extractPushInfo(json));
 	}
 	/**
-	 * Clones a git repository and
-	 * verifies that the .git directory
-	 * exists
+	 * Create a temporary git repository,
+	 * clones it and verifies that the
+	 * .git directory exists
 	 */
 	@Test
-	public void runGitClone() throws IOException, InterruptedException {
+	public void runGitClone(@TempDir Path path) throws IOException, InterruptedException {
 		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
-		String url = "https://github.com/octocat/Hello-World.git";
-		String repositoryName = "Hello-World";
-		File tempDirectory = continuousIntegrationServer.gitClone(url);
-		File repositoryFolder = new File(tempDirectory, repositoryName);
-		boolean gitFolderExists = new File(repositoryFolder, ".git").exists();
+		continuousIntegrationServer.runCommand(List.of("git", "init"), path.toFile());
+		String url = path.toString();
+		File tempDirectory = continuousIntegrationServer.gitClone(url, null);
+		boolean gitFolderExists = new File(tempDirectory, ".git").exists();
 		assertTrue(gitFolderExists);
 	}
 
     /**
+     * Creates a new server and writes a log 
+     * The file contents should be the same as expected
+     */ 
+    @Test
+    public void writeLogPositive(@TempDir Path path) {
+        File dir = path.toFile();
+        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(dir);
+        String commitId = "test";
+        String log = "Text in file";
+
+        continuousIntegrationServer.storeBuildLog(log, commitId);
+
+        File expectedFile = new File(dir.getPath() + "/1.log");
+
+        StringBuilder stringBuilder = new StringBuilder();
+        try (Scanner scanner = new Scanner(expectedFile)) {
+            while (scanner.hasNextLine()) {
+                stringBuilder.append(scanner.nextLine()).append("\n");
+            }
+        } catch (FileNotFoundException e) {
+            assertTrue(false);
+        }
+
+        String message = stringBuilder.toString();
+        StringBuilder expectedMessage = new StringBuilder();
+        expectedMessage.append("Commit ID: ").append(commitId).append("\n");
+        expectedMessage.append("Build date: ").append(LocalDate.now().toString()).append("\n");
+        expectedMessage.append(log).append("\n");
+        assertEquals(message, expectedMessage.toString());
+    }
+
+    /**
+     * Create and store several log files
+     * to test that they are named properly.
+     * Should be named 1.log, 2.log, 3.log and 
+     * 4.log
+     */ 
+    @Test
+    public void writeLogSeveral(@TempDir Path path) {
+        File dir = path.toFile();
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
+        String commitId = "test";
+        String log = "Text in file";
+        
+        ciServer.storeBuildLog(log, commitId + " 1");
+        ciServer.storeBuildLog(log, commitId + " 2");
+        ciServer.storeBuildLog(log, commitId + " 3");
+        ciServer.storeBuildLog(log, commitId + " 4");
+
+        File log1 = new File(dir.getPath() + "/1.log");
+        File log2 = new File(dir.getPath() + "/2.log");
+        File log3 = new File(dir.getPath() + "/3.log");
+        File log4 = new File(dir.getPath() + "/4.log");
+
+        assertTrue(log1.exists());
+        assertTrue(log2.exists());
+        assertTrue(log3.exists());
+        assertTrue(log4.exists());
+        
+    }
+
+    /** 
      * Runs "runTests" for a small maven project.
      * The build should be successfull
      */
