@@ -35,6 +35,22 @@ import org.json.JSONObject;
  */
 public class ContinuousIntegrationServer extends AbstractHandler {
     private final File logsFolder;
+    private final String sha256Signature;
+    
+    
+    /**
+     * Gets the value of an environment variable 
+     */
+    private String getEnvVariable(String envVariableName) throws IllegalStateException {
+		if (envVariableName == null) {
+			throw new IllegalArgumentException("Can not get environment variable if empty");
+		}
+		String result = System.getenv(envVariableName);
+		if (result == null || result.isEmpty()) {
+			throw new IllegalStateException(String.format("Environment variable: %s must be set", envVariableName));
+		}
+		return result;
+    }
 
     /**
      * Constructs a new ContinuousIntegrationServer instance with the default logs folder path.
@@ -49,6 +65,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         if (logsFolder.isFile()) {
             throw new IllegalArgumentException("logsFolder can not be an already existing file.");
         }
+	sha256Signature = getEnvVariable("SHA256_SIGNATURE");
     }
     
     /**
@@ -66,6 +83,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         if (logsFolder.isFile()) {
             throw new IllegalArgumentException("logsFolder can not be an already existing file.");
         }
+	sha256Signature = getEnvVariable("SHA256_SIGNATURE");
     }
 
     public void handle(String target,
@@ -111,8 +129,12 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         throws IOException, ServletException
     {
         String githubEvent = request.getHeader("X-GitHub-Event");
-
+        String githubSignature = request.getHeader("X-Hub-Signature-256");
         try {
+	    if(!githubSignatureIsValid(githubSignature)) {
+				response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+				return;
+	    }
             String body = IOUtils.toString(request.getReader());
             String urlDecoded = URLDecoder.decode(body, StandardCharsets.UTF_8);
             String jsonStr = urlDecoded.replace("payload=", "");
@@ -121,7 +143,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
             if ("push".equals(githubEvent)) {
                 PushEventInfo info = PushEventInfo.fromJSON(jsonObject);
-                
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().println("Push event recieved.");
 
@@ -138,6 +159,14 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
+
+    private boolean githubSignatureIsValid(String githubSignature) {
+		if (githubSignature == null || githubSignature.isEmpty()) {
+			throw new IllegalArgumentException("Github Signature cant be null");
+		}
+		boolean result = sha256Signature.equals(githubSignature);
+		return result;
+	}
 
     private void handleGet(String target,
                        Request baseRequest,
@@ -176,6 +205,45 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     }
 
     /**
+     * Extracts information from Github push webhook payload.
+     * 
+     * @param jsonObject the JSON payload recieved from Github push event.
+     * @return a PushEventInfo record containing extracted data.
+     * @throws IllegalArgumentException if payload is not valid.
+     */
+    PushEventInfo extractPushInfo(JSONObject jsonObject) throws IllegalArgumentException{
+        try {
+            JSONObject repo = jsonObject.getJSONObject("repository");
+            String repositoryURL = repo.getString("clone_url");
+            String repositoryName = repo.getString("name");
+
+            String SHA = jsonObject.getString("after");
+
+            String ref = jsonObject.getString("ref");
+            String branch = ref.replace("refs/heads/", "");
+
+            JSONObject pusher = jsonObject.getJSONObject("pusher");
+            String author = pusher.getString("name");
+
+            String commitMessage;
+            
+            try {
+                JSONArray commits= jsonObject.getJSONArray("commits");
+                JSONObject latestCommit = commits.getJSONObject(0);
+                commitMessage = latestCommit.getString("message");
+            } catch (JSONException e) {
+                commitMessage = "N/A";
+            }
+
+            return new PushEventInfo(author, repositoryURL, repositoryName, SHA, branch, commitMessage);
+        } catch (JSONException e) {
+            throw new IllegalArgumentException("Invalid Github push payload", e);
+        }
+    }
+
+
+    /**
+>>>>>>> 99eb604 (BREAKING CHANGE: require and verify webhook signature)
      * Executes command in specificed directory 
      * @param command The command to run.
      * @param directory The directory to run it in.

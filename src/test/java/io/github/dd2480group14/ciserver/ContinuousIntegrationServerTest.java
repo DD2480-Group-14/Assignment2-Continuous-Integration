@@ -168,7 +168,8 @@ public class ContinuousIntegrationServerTest {
 				"ref": "refs/heads/example",
 				"after": "123123",
 				"repository": {
-					"clone_url": "https://github.com/test/example.git"
+					"clone_url": "https://github.com/test/example.git",
+					"name": "test"
 				},
 				"pusher": {
 					"name": "test-user"
@@ -185,7 +186,7 @@ public class ContinuousIntegrationServerTest {
 
 		PushEventInfo info = PushEventInfo.fromJSON(json);
 
-		assertEquals("https://github.com/test/example.git", info.repoURL());
+		assertEquals("https://github.com/test/example.git", info.repositoryURL());
 		assertEquals("123123", info.SHA());
 		assertEquals("example", info.branch());
 		assertEquals("test-user", info.author());
