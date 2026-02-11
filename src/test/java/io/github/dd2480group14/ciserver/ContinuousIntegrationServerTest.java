@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Scanner;
 
 import org.json.JSONObject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -17,8 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.util.Scanner;
 
 
 /**
@@ -184,8 +183,7 @@ public class ContinuousIntegrationServerTest {
 
 		JSONObject json = new JSONObject(payload);
 
-		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
-		PushEventInfo info = continuousIntegrationServer.extractPushInfo(json);
+		PushEventInfo info = PushEventInfo.fromJSON(json);
 
 		assertEquals("https://github.com/test/example.git", info.repoURL());
 		assertEquals("123123", info.SHA());
@@ -205,7 +203,7 @@ public class ContinuousIntegrationServerTest {
 
 		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
 
-		assertThrows(IllegalArgumentException.class, () -> continuousIntegrationServer.extractPushInfo(json));
+		assertThrows(IllegalArgumentException.class, () -> PushEventInfo.fromJSON(json));
 	}
 	/**
 	 * Create a temporary git repository,

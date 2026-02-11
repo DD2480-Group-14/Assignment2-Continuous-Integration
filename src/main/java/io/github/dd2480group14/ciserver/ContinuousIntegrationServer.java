@@ -5,10 +5,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -21,19 +23,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import org.apache.commons.lang3.StringUtils;
-
-import java.time.LocalDate;
-
-
-import java.net.URLDecoder;
 
 /** 
  *A ContinuousIntegrationServer which acts as webhook.
@@ -125,12 +120,10 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             JSONObject jsonObject = new JSONObject(jsonStr);
 
             if ("push".equals(githubEvent)) {
-                PushEventInfo info = extractPushInfo(jsonObject);
+                PushEventInfo info = PushEventInfo.fromJSON(jsonObject);
                 
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().println("Push event recieved.");
-
-
 
                 File gitDirectory = gitClone(info.repoURL(), info.SHA());
                 String testLog = runTests(gitDirectory);
@@ -181,65 +174,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
         response.sendError(404);
     }
-
-    /**
-     * Extracts information from Github push webhook payload.
-     * 
-     * @param jsonObject the JSON payload recieved from Github push event.
-     * @return a PushEventInfo record containing extracted data.
-     * @throws IllegalArgumentException if payload is not valid.
-     */
-    PushEventInfo extractPushInfo(JSONObject jsonObject) throws IllegalArgumentException{
-        try {
-            JSONObject repo = jsonObject.getJSONObject("repository");
-
-            // Repository URL
-            String repoURL = repo.getString("clone_url");
-
-            // Commit SHA
-            String SHA = jsonObject.getString("after");
-
-            // Branch name
-            String ref = jsonObject.getString("ref");
-            String branch = ref.replace("refs/heads/", "");
-
-            JSONObject pusher = jsonObject.getJSONObject("pusher");
-            String author = pusher.getString("name");
-
-            // Repository owner
-            JSONObject ownerObject = repo.optJSONObject("owner");
-            String owner = ownerObject != null ?
-                    ownerObject.optString("login", "Unknown") :
-                    "Unknown";
-
-
-            String repoName = repo.optString("name", "Unknown");
-
-            String commitMessage = "No commit message";
-
-            // Safe commit parsing
-            JSONArray commits = jsonObject.optJSONArray("commits");
-
-            if (commits != null && commits.length() > 0) {
-                JSONObject latestCommit = commits.getJSONObject(0);
-
-                commitMessage = latestCommit.optString("message", "No commit message");
-            }
-            return new PushEventInfo(
-                    author,
-                    repoURL,
-                    SHA,
-                    branch,
-                    commitMessage,
-                    owner,
-                    repoName
-            );
-            
-        } catch (JSONException e) {
-                throw new IllegalArgumentException("Invalid Github push payload", e);
-        }
-    }
-
 
     /**
      * Executes command in specificed directory 
