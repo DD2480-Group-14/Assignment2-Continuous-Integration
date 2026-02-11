@@ -416,7 +416,7 @@ public class ContinuousIntegrationServerTest {
             assertTrue(false);
         }
 
-        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer();
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
         String logListEmpty = "<table><tr><td> Build ID </td><td> Date </td><td> Commit ID </td></tr></table><style>table, th, td {border: 1px solid black;border-collapse: collapse;text-align: center;}</style>";
         assertEquals(logListEmpty, ciServer.getBuilds());
     }
