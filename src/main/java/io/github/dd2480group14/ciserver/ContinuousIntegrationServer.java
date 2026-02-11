@@ -174,59 +174,59 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * @throws IllegalArgumentException if payload is not valid.
      */
     PushEventInfo extractPushInfo(JSONObject jsonObject) throws IllegalArgumentException{
-    try {
-        JSONObject repo = jsonObject.getJSONObject("repository");
+        try {
+            JSONObject repo = jsonObject.getJSONObject("repository");
 
-        // Repository URL
-        String repoURL = repo.getString("clone_url");
+            // Repository URL
+            String repoURL = repo.getString("clone_url");
 
-        // Commit SHA
-        String SHA = jsonObject.getString("after");
+            // Commit SHA
+            String SHA = jsonObject.getString("after");
 
-        // Branch name
-        String ref = jsonObject.getString("ref");
-        String branch = ref.replace("refs/heads/", "");
+            // Branch name
+            String ref = jsonObject.getString("ref");
+            String branch = ref.replace("refs/heads/", "");
 
-        // Repository owner
-        JSONObject ownerObject = repo.optJSONObject("owner");
-        String owner = ownerObject != null ?
-                ownerObject.optString("login", "Unknown") :
-                "Unknown";
+            // Repository owner
+            JSONObject ownerObject = repo.optJSONObject("owner");
+            String owner = ownerObject != null ?
+                    ownerObject.optString("login", "Unknown") :
+                    "Unknown";
 
-        // Repository name
-        String repoName = repo.optString("name", "Unknown");
+            // Repository name
+            String repoName = repo.optString("name", "Unknown");
 
-        // Default values
-        String author = "Unknown";
-        String commitMessage = "No commit message";
+            // Default values
+            String author = "Unknown";
+            String commitMessage = "No commit message";
 
-        // Safe commit parsing
-        JSONArray commits = jsonObject.optJSONArray("commits");
+            // Safe commit parsing
+            JSONArray commits = jsonObject.optJSONArray("commits");
 
-        if (commits != null && commits.length() > 0) {
-            JSONObject latestCommit = commits.getJSONObject(0);
+            if (commits != null && commits.length() > 0) {
+                JSONObject latestCommit = commits.getJSONObject(0);
 
-            commitMessage = latestCommit.optString("message", "No commit message");
+                commitMessage = latestCommit.optString("message", "No commit message");
 
-            JSONObject authorObj = latestCommit.optJSONObject("author");
-            if (authorObj != null) {
-                author = authorObj.optString("name", "Unknown");
+                JSONObject authorObj = latestCommit.optJSONObject("author");
+                if (authorObj != null) {
+                    author = authorObj.optString("name", "Unknown");
+                }
+            }
+            return new PushEventInfo(
+                    author,
+                    repoURL,
+                    SHA,
+                    branch,
+                    commitMessage,
+                    owner,
+                    repoName
+            );
+            
+            } catch (JSONException e) {
+                throw new IllegalArgumentException("Invalid Github push payload", e);
             }
         }
-        return new PushEventInfo(
-                author,
-                repoURL,
-                SHA,
-                branch,
-                commitMessage,
-                owner,
-                repoName
-        );
-        
-        } catch (JSONException e) {
-            throw new IllegalArgumentException("Invalid Github push payload", e);
-        }
-    }
 
 
     /**
