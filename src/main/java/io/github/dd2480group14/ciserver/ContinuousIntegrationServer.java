@@ -139,7 +139,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         throws IOException, ServletException
     {
         String githubEvent = request.getHeader("X-GitHub-Event");
-        String githubSignature = request.getHeader("X-Hub-Signature-256");
+        	String githubSignature = request.getHeader("X-Hub-Signature-256");
         try {
             String body = IOUtils.toString(request.getReader());
 	    validateGithubSignature(githubSignature, body);
@@ -176,7 +176,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * Validates the incoming github webhook signature of the
      * payload and throws SecurityException if invalid
      */
-    private void validateGithubSignature(String githubSignature, String body) {
+    private void validateGithubSignature(String githubSignature, String body) throws SecurityException, IllegalArgumentException {
 		if (githubSignature == null || githubSignature.isEmpty()) {
 			throw new IllegalArgumentException("Github Signature cant be null");
 		}
@@ -261,7 +261,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
 
     /**
->>>>>>> 99eb604 (BREAKING CHANGE: require and verify webhook signature)
      * Executes command in specificed directory 
      * @param command The command to run.
      * @param directory The directory to run it in.
