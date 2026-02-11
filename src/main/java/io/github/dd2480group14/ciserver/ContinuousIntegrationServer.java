@@ -31,12 +31,22 @@ import org.json.JSONObject;
  */
 public class ContinuousIntegrationServer extends AbstractHandler {
     private final File logsFolder;
+    private final GitHubApiClient githubClient;
 
     /**
      * Constructs a new ContinuousIntegrationServer instance with the default logs folder path.
      */
     public ContinuousIntegrationServer() {
         logsFolder = new File("logs");
+
+        String githubToken = System.getenv("GITHUB_TOKEN");
+        if (githubToken != null && !githubToken.isEmpty()) {
+            this.githubClient = new GitHubApiClient(githubToken);
+            System.out.println("GitHub API integration enabled");
+        } else {
+            this.githubClient = null;
+            System.out.println("GitHub API integration disabled (no GITHUB_TOKEN)");
+        }
 
         if (!logsFolder.exists()) {
             logsFolder.mkdir();
