@@ -33,6 +33,12 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.time.LocalDate;
+
+import io.github.cdimascio.dotenv.Dotenv;
+
+import java.net.URLDecoder;
+
 /** 
  *A ContinuousIntegrationServer which acts as webhook.
  */
@@ -41,14 +47,15 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     private final String signature;
     
     
-    /**
-     * Gets the value of an environment variable 
+    /*
+     * Gets environment variable from .env
      */
     private String getEnvVariable(String envVariableName) throws IllegalStateException {
 		if (envVariableName == null) {
-			throw new IllegalArgumentException("Can not get environment variable if empty");
+			throw new IllegalArgumentException("environment variable name cant be empty");
 		}
-		String result = System.getenv(envVariableName);
+		Dotenv dotenv = Dotenv.load();
+		String result = dotenv.get(envVariableName);
 		if (result == null || result.isEmpty()) {
 			throw new IllegalStateException(String.format("Environment variable: %s must be set", envVariableName));
 		}
@@ -68,7 +75,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         if (logsFolder.isFile()) {
             throw new IllegalArgumentException("logsFolder can not be an already existing file.");
         }
-	signature = getEnvVariable("SIGNATURE");
+	signature = getEnvVariable("WEBHOOK_SIGNATURE");
     }
     
     /**
@@ -86,7 +93,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         if (logsFolder.isFile()) {
             throw new IllegalArgumentException("logsFolder can not be an already existing file.");
         }
-	signature = getEnvVariable("SIGNATURE");
+	signature = getEnvVariable("WEBHOOK_SIGNATURE");
     }
 
     public void handle(String target,
@@ -164,6 +171,11 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         }
     }
 
+
+    /**
+     * Validates the incoming github webhook signature of the
+     * payload and throws SecurityException if invalid
+     */
     private void validateGithubSignature(String githubSignature, String body) {
 		if (githubSignature == null || githubSignature.isEmpty()) {
 			throw new IllegalArgumentException("Github Signature cant be null");

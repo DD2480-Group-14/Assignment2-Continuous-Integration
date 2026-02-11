@@ -52,6 +52,12 @@
     <version>1.21.0</version>
   </dependency>
 
+<dependency>
+    <groupId>io.github.cdimascio</groupId>
+    <artifactId>dotenv-kotlin</artifactId>
+    <version>6.5.1</version>
+</dependency>
+
 
   <!-- Source: https://mvnrepository.com/artifact/org.eclipse.jetty/jetty-server -->
   <dependency>
