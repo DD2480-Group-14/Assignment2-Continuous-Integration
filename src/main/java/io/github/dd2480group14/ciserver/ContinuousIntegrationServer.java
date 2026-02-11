@@ -142,7 +142,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         	String githubSignature = request.getHeader("X-Hub-Signature-256");
         try {
             String body = IOUtils.toString(request.getReader());
-	    validateGithubSignature(githubSignature, body);
+			validateGithubSignature(githubSignature, body);
             String urlDecoded = URLDecoder.decode(body, StandardCharsets.UTF_8);
             String jsonStr = urlDecoded.replace("payload=", "");
             System.out.println(jsonStr);
