@@ -196,6 +196,8 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                     ownerObject.optString("login", "Unknown") :
                     "Unknown";
 
+            String repoName = repo.optString("name", "Unknown");
+
             String commitMessage = "No commit message";
 
             // Safe commit parsing
