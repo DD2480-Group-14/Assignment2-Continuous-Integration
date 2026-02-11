@@ -36,12 +36,18 @@ public class ContinuousIntegrationServerTest {
 
     /**
      * Creates a new server with a log folder with a 
-     * log with the given message. Retrieveing the log
-     * should return the same message.
+     * log with the given message. 
+	 * Retrieveing the log should return the same message.
+	 * Also, retrieving the summary should return the appropriate summary.
      */
     @Test
     public void getBuildLogPositive(@TempDir Path path) throws IOException {
-        String message = "Text in file\n";
+		String commitId = "123";
+		String buildDate = "2022-01-01";
+        String message = "Commit ID: " + commitId
+					   + "\nBuild date: " + buildDate
+					   + "\nAdditional log content\n";
+
         File dir = path.toFile();
         File log = new File(dir.getPath() + "/1.log");
         try {
@@ -60,12 +66,47 @@ public class ContinuousIntegrationServerTest {
 
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
         assertEquals(message, ciServer.getBuildLog("1"));
+        assertEquals("1 " + buildDate + " " + commitId, ciServer.getBuildLogSummary("1"));
     }
 
+	/**
+     * Creates a new server with a log folder with a 
+     * log with the given message. 
+	 * Retrieveing the log should return the same message.
+	 * Also, retrieving the summary should return the appropriate summary.
+	 * Note that build date field in the summary should be null
+	 * since it does not exist.
+     */
+    @Test
+    public void getBuildLogPositiveNoBuildDate(@TempDir Path path) throws IOException {
+		String commitId = "123";
+        String message = "Commit ID: " + commitId
+					   + "\nAdditional log content\n";
+
+        File dir = path.toFile();
+        File log = new File(dir.getPath() + "/1.log");
+        try {
+            log.createNewFile();
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(log, true))) {
+            
+            writer.write(message);
+            
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
+        assertEquals(message, ciServer.getBuildLog("1"));
+        assertEquals("1 " + null + " " + commitId, ciServer.getBuildLogSummary("1"));
+    }
 
     /**
      * Creates a new server with empty log folder.
-     * Trying to retreive a log should throw
+     * Trying to retreive a log (or its summary) should throw
      * NoSuchFileException.
      */
     @Test
@@ -73,6 +114,7 @@ public class ContinuousIntegrationServerTest {
         File dir = path.toFile();
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
 		assertThrows(FileNotFoundException.class, () -> ciServer.getBuildLog("1"));
+		assertThrows(FileNotFoundException.class, () -> ciServer.getBuildLogSummary("1"));
     }
 
 

@@ -21,6 +21,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
+import org.apache.commons.lang3.StringUtils;
+
 /** 
  Skeleton of a ContinuousIntegrationServer which acts as webhook
  See the Jetty documentation for API documentation of those classes.
@@ -208,6 +210,26 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         } 
         return stringBuilder.toString();
     }
+
+    /**
+     * Returns a summary of the log with the given build ID.
+     * @param buildId Build ID of the log
+     * @return The summary of the log with the following format:
+     * <br>
+     * "[Build ID] [Date] [commit ID]".
+     * <br> <br>
+     * Metadata is replaced by "null" if it does not exist.
+     * @throws IOException If the file does not exist
+     * @throws IllegalArgumentException If the argument leads to a path outisde of the logs folder
+     */
+    String getBuildLogSummary(String buildId) throws IOException, IllegalArgumentException {
+        String fullText = getBuildLog(buildId);
+        String commitId = StringUtils.substringBetween(fullText, "Commit ID: ", "\n");
+        String date = StringUtils.substringBetween(fullText, "Build date: ", "\n");
+        String output = buildId + " " + date + " " + commitId;
+        return output;
+    }
+
 
     private boolean isInLogDirectory(File file) {
 		Path realFilePath = file.toPath().toAbsolutePath().normalize();
