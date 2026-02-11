@@ -165,8 +165,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             }
         } catch (SecurityException e) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-	}
-	catch (IllegalArgumentException | JSONException | InterruptedException e) {
+        } catch (IllegalArgumentException | JSONException | InterruptedException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
