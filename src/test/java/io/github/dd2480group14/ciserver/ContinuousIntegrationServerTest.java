@@ -7,6 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.json.JSONObject;
@@ -16,6 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import java.util.Scanner;
+
 
 /**
  * Unit test for Conitinuous Integration Server.
@@ -218,6 +222,68 @@ public class ContinuousIntegrationServerTest {
 	}
 
     /**
+     * Creates a new server and writes a log 
+     * The file contents should be the same as expected
+     */ 
+    @Test
+    public void writeLogPositive(@TempDir Path path) {
+        File dir = path.toFile();
+        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(dir);
+        String commitId = "test";
+        String log = "Text in file";
+
+        continuousIntegrationServer.storeBuildLog(log, commitId);
+
+        File expectedFile = new File(dir.getPath() + "/1.log");
+
+        StringBuilder stringBuilder = new StringBuilder();
+        try (Scanner scanner = new Scanner(expectedFile)) {
+            while (scanner.hasNextLine()) {
+                stringBuilder.append(scanner.nextLine()).append("\n");
+            }
+        } catch (FileNotFoundException e) {
+            assertTrue(false);
+        }
+
+        String message = stringBuilder.toString();
+        StringBuilder expectedMessage = new StringBuilder();
+        expectedMessage.append("Commit ID: ").append(commitId).append("\n");
+        expectedMessage.append("Build date: ").append(LocalDate.now().toString()).append("\n");
+        expectedMessage.append(log).append("\n");
+        assertEquals(message, expectedMessage.toString());
+    }
+
+    /**
+     * Create and store several log files
+     * to test that they are named properly.
+     * Should be named 1.log, 2.log, 3.log and 
+     * 4.log
+     */ 
+    @Test
+    public void writeLogSeveral(@TempDir Path path) {
+        File dir = path.toFile();
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
+        String commitId = "test";
+        String log = "Text in file";
+        
+        ciServer.storeBuildLog(log, commitId + " 1");
+        ciServer.storeBuildLog(log, commitId + " 2");
+        ciServer.storeBuildLog(log, commitId + " 3");
+        ciServer.storeBuildLog(log, commitId + " 4");
+
+        File log1 = new File(dir.getPath() + "/1.log");
+        File log2 = new File(dir.getPath() + "/2.log");
+        File log3 = new File(dir.getPath() + "/3.log");
+        File log4 = new File(dir.getPath() + "/4.log");
+
+        assertTrue(log1.exists());
+        assertTrue(log2.exists());
+        assertTrue(log3.exists());
+        assertTrue(log4.exists());
+        
+    }
+
+    /** 
      * Runs "runTests" for a small maven project.
      * The build should be successfull
      */

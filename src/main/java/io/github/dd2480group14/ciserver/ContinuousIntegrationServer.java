@@ -28,6 +28,9 @@ import org.json.JSONObject;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.time.LocalDate;
+
+
 /** 
  *A ContinuousIntegrationServer which acts as webhook.
  */
@@ -345,8 +348,59 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         return "TODO";
     }
 
-    public void storeBuildLog(String log) {
-        return;
+    /**
+     * Get the next number to be
+     * used for the name of a new
+     * log file
+     *
+     * @return The next number
+     */ 
+    private int getLogCount() {
+        Path logsFolderPath = logsFolder.toPath();
+
+        List<Path> fileList;
+        try (Stream<Path> logFiles = Files.walk(logsFolderPath)){
+            fileList = logFiles.filter(fileName -> fileName.getFileName().toString().endsWith(".log")).toList();
+        } catch (IOException e) {
+            return 0;
+        }
+
+        return fileList.size();
+    }
+
+    /**
+     * Stores a build log in a log file
+     * The log file is named in ascending
+     * order from the previously created
+     * log file.
+     *
+     * @param log The output from building the project
+     * @param commitId The commit id used to identify a specific log
+     */ 
+    public void storeBuildLog(String log, String commitId) {
+        StringBuilder fileName = new StringBuilder();
+        int nextNumber = getLogCount() + 1;
+
+        fileName.append(logsFolder.getPath()).append("/").append(nextNumber).append(".log");
+        File logFile = new File(fileName.toString());
+
+        if(logFile.exists()) {
+            return;
+        }
+
+        StringBuilder fullLog = new StringBuilder();
+        fullLog.append("Commit ID: ").append(commitId).append("\n");
+        fullLog.append("Build date: ").append(LocalDate.now().toString()).append("\n");
+        fullLog.append(log);
+        
+
+
+        try {
+            logFile.createNewFile();
+            Files.writeString(Path.of(fileName.toString()), fullLog.toString());
+        } catch (Exception e) {
+            return;
+        }
     }
  
     /**

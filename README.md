@@ -2,7 +2,14 @@
 
 ## Setting up the CI server
 
+### Dependencies
+* Apache Maven: 3.9.11
+* Java 25.0.2
+* Unix-like OS
+* Ngrok 3.36.0
+
 ### Starting and setting up the server
+
 Open a terminal and go to this root folder of this reposittory
 
 1. Create the jar file
