@@ -174,23 +174,55 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * @throws IllegalArgumentException if payload is not valid.
      */
     PushEventInfo extractPushInfo(JSONObject jsonObject) throws IllegalArgumentException{
-        try {
-            JSONObject repo = jsonObject.getJSONObject("repository");
-            String repoURL = repo.getString("clone_url");
+    try {
+        JSONObject repo = jsonObject.getJSONObject("repository");
 
-            String SHA = jsonObject.getString("after");
+        // Repository URL
+        String repoURL = repo.getString("clone_url");
 
-            String ref = jsonObject.getString("ref");
-            String branch = ref.replace("refs/heads/", "");
+        // Commit SHA
+        String SHA = jsonObject.getString("after");
 
-            JSONObject pusher = jsonObject.getJSONObject("pusher");
-            String author = pusher.getString("name");
+        // Branch name
+        String ref = jsonObject.getString("ref");
+        String branch = ref.replace("refs/heads/", "");
 
-            JSONArray commits= jsonObject.getJSONArray("commits");
+        // Repository owner
+        JSONObject ownerObject = repo.optJSONObject("owner");
+        String owner = ownerObject != null ?
+                ownerObject.optString("login", "Unknown") :
+                "Unknown";
+
+        // Repository name
+        String repoName = repo.optString("name", "Unknown");
+
+        // Default values
+        String author = "Unknown";
+        String commitMessage = "No commit message";
+
+        // Safe commit parsing
+        JSONArray commits = jsonObject.optJSONArray("commits");
+
+        if (commits != null && commits.length() > 0) {
             JSONObject latestCommit = commits.getJSONObject(0);
-            String commitMessage = latestCommit.getString("message");
 
-            return new PushEventInfo(author, repoURL, SHA, branch, commitMessage);
+            commitMessage = latestCommit.optString("message", "No commit message");
+
+            JSONObject authorObj = latestCommit.optJSONObject("author");
+            if (authorObj != null) {
+                author = authorObj.optString("name", "Unknown");
+            }
+        }
+        return new PushEventInfo(
+                author,
+                repoURL,
+                SHA,
+                branch,
+                commitMessage,
+                owner,
+                repoName
+        );
+        
         } catch (JSONException e) {
             throw new IllegalArgumentException("Invalid Github push payload", e);
         }
