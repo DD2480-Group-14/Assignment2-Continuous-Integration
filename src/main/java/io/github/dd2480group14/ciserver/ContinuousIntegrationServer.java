@@ -139,7 +139,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * @return a PushEventInfo record containing extracted data.
      * @throws IllegalArgumentException if payload is not valid.
      */
-    private PushEventInfo extractPushInfo(JSONObject jsonObject) throws IllegalArgumentException{
+    PushEventInfo extractPushInfo(JSONObject jsonObject) throws IllegalArgumentException{
         try {
             JSONObject repo = jsonObject.getJSONObject("repository");
             String repoURL = repo.getString("clone_url");
