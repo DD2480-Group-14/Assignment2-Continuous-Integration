@@ -75,7 +75,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         if (logsFolder.isFile()) {
             throw new IllegalArgumentException("logsFolder can not be an already existing file.");
         }
-	signature = getEnvVariable("WEBHOOK_SIGNATURE");
+		signature = getEnvVariable("WEBHOOK_SIGNATURE");
     }
     
     /**
@@ -93,7 +93,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         if (logsFolder.isFile()) {
             throw new IllegalArgumentException("logsFolder can not be an already existing file.");
         }
-	signature = getEnvVariable("WEBHOOK_SIGNATURE");
+		signature = getEnvVariable("WEBHOOK_SIGNATURE");
     }
 
     public void handle(String target,
