@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,6 +31,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.time.LocalDate;
 
+
+import java.net.URLDecoder;
 
 /** 
  *A ContinuousIntegrationServer which acts as webhook.
@@ -115,7 +118,10 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
         try {
             String body = IOUtils.toString(request.getReader());
-            JSONObject jsonObject = new JSONObject(body);
+            String urlDecoded = URLDecoder.decode(body, StandardCharsets.UTF_8);
+            String jsonStr = urlDecoded.replace("payload=", "");
+            System.out.println(jsonStr);
+            JSONObject jsonObject = new JSONObject(jsonStr);
 
             if ("push".equals(githubEvent)) {
                 PushEventInfo info = extractPushInfo(jsonObject);
@@ -123,14 +129,18 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().println("Push event recieved.");
 
-                // TO DO: Run CI Pipeline
 
+
+                File gitDirectory = gitClone(info.repoURL(), info.SHA());
+                String testLog = runTests(gitDirectory);
+                storeBuildLog(testLog, info.SHA());
+                
             } else {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().println("No push event recieved. Event ignored.");
             }
 
-        } catch (IllegalArgumentException | JSONException e) {
+        } catch (IllegalArgumentException | JSONException | InterruptedException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
@@ -191,9 +201,15 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             JSONObject pusher = jsonObject.getJSONObject("pusher");
             String author = pusher.getString("name");
 
-            JSONArray commits= jsonObject.getJSONArray("commits");
-            JSONObject latestCommit = commits.getJSONObject(0);
-            String commitMessage = latestCommit.getString("message");
+            String commitMessage;
+            
+            try {
+                JSONArray commits= jsonObject.getJSONArray("commits");
+                JSONObject latestCommit = commits.getJSONObject(0);
+                commitMessage = latestCommit.getString("message");
+            } catch (JSONException e) {
+                commitMessage = "N/A";
+            }
 
             return new PushEventInfo(author, repoURL, SHA, branch, commitMessage);
         } catch (JSONException e) {
@@ -238,12 +254,18 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * Clones git repository into a temporary directory
      *
      * @param url The url of the repository
+     * @param branch The branch that we want
+     * @param commitId The specific commit ID. If null, the latest commit is used.
      * @return directory The temporary directory containing the repo
      */
-    File gitClone(String url) throws IOException, InterruptedException {
+    File gitClone(String url, String commitId) throws IOException, InterruptedException {
 		File directory = Files.createTempDirectory("repository").toFile();
-		List<String> command = List.of("git", "clone", url);
+		List<String> command = List.of("git", "clone", url, ".");
 		runCommand(command, directory);
+        if (commitId != null) {
+            command = List.of("git", "checkout", commitId);
+		    runCommand(command, directory);
+        }
 		return directory;
     }
 
