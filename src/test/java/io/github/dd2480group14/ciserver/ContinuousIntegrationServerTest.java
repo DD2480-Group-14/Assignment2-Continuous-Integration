@@ -344,16 +344,16 @@ public class ContinuousIntegrationServerTest {
 
     /**
      * Gets all build logs, which in this case is 
-     * 2. The whole message should be equal to the 
-     * doublemessage
+     * 2. The whole message should be equal to
+     * the log header + the log summaries
      */ 
     @Test
-    public void getAllBuildLogsPositive(@TempDir Path path) {
-        String message = "Text in file\n";
-        String doubleMessage = message + message;
+    public void getAllBuildLogsPositive(@TempDir Path path) throws IOException {
+        String message1 = "Commit ID: 1\nBuild date: " + LocalDate.now().toString();
+        String message2 = "Commit ID: 2\nBuild date: " + LocalDate.now().toString();
         File dir = path.toFile();
-        File log1 = new File(dir.getPath() + "/log1.log");
-        File log2 = new File(dir.getPath() + "/log2.log");
+        File log1 = new File(dir.getPath() + "/1.log");
+        File log2 = new File(dir.getPath() + "/2.log");
 
         try {
             log1.createNewFile();
@@ -364,7 +364,7 @@ public class ContinuousIntegrationServerTest {
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(log1, true))) {
             
-            writer.write(message);
+            writer.write(message1);
             
         } catch (IOException e) {
             assertTrue(false);
@@ -372,23 +372,29 @@ public class ContinuousIntegrationServerTest {
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(log2, true))) {
             
-            writer.write(message);
+            writer.write(message2);
             
         } catch (IOException e) {
             assertTrue(false);
         }
 
+        String logListHeader = "<p> Build ID | Date | Commit ID </p><br>";
+        String logList = "<a href=\"1\">1 " 
+        + LocalDate.now().toString() 
+        + " 1</a><br><a href=\"2\">2 " 
+        + LocalDate.now().toString() 
+        + " 2" + "</a><br>";
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
-        assertEquals(doubleMessage, ciServer.getBuilds());
+        assertEquals(logListHeader + logList, ciServer.getBuilds());
     }
 
     /**
      * Tries to get build logs when there are no
      * .log files in the directory. Should return
-     * an empty string
+     * an only a HTML string containing a p element
      */ 
     @Test
-    public void getAllBuildLogsNegative(@TempDir Path path) {
+    public void getAllBuildLogsNegative(@TempDir Path path) throws IOException {
         File dir = path.toFile();
         File testFile = new File(dir.getPath() + "/log.txt");
         String message = "This should not be read";
@@ -406,7 +412,7 @@ public class ContinuousIntegrationServerTest {
         }
 
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer();
-        assertEquals("", ciServer.getBuilds());
+        assertEquals("<p> Build ID | Date | Commit ID </p><br>", ciServer.getBuilds());
     }
 }
 

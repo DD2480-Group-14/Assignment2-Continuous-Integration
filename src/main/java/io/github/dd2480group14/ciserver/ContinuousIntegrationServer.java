@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
@@ -349,6 +350,9 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         Path logsFolderPath = logsFolder.toPath();
 
         StringBuilder allLogs = new StringBuilder();
+
+        List<String> buildIds = new ArrayList<>();
+
 		    try ( Stream<Path> paths = Files.walk(logsFolderPath)) {
             for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
                 String buildId = path.getFileName().toString();
@@ -358,10 +362,23 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                 }
 
                 buildId = buildId.substring(0, buildId.length() - 4);
-
-                allLogs.append(getBuildLog(buildId));
+                buildIds.add(buildId);
             }
 		    } catch (Exception e) {
+            return null;
+        }
+
+        // Sort the buildId list to display the 
+        // builds in ascending order
+        buildIds.sort(Comparator.comparingInt(Integer::parseInt));
+
+        allLogs.append("<p> Build ID | Date | Commit ID </p><br>");
+        try {
+            for(String buildId : buildIds) {
+                String buildLogSummary = getBuildLogSummary(buildId);
+                allLogs.append("<a href=\"").append(buildId).append("\">").append(buildLogSummary).append("</a><br>");
+            }
+        } catch (IOException e) {
             return null;
         }
         return allLogs.toString();
