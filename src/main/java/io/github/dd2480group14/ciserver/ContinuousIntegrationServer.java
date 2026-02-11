@@ -191,29 +191,51 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     PushEventInfo extractPushInfo(JSONObject jsonObject) throws IllegalArgumentException{
         try {
             JSONObject repo = jsonObject.getJSONObject("repository");
+
+            // Repository URL
             String repoURL = repo.getString("clone_url");
 
+            // Commit SHA
             String SHA = jsonObject.getString("after");
 
+            // Branch name
             String ref = jsonObject.getString("ref");
             String branch = ref.replace("refs/heads/", "");
 
             JSONObject pusher = jsonObject.getJSONObject("pusher");
             String author = pusher.getString("name");
 
-            String commitMessage;
-            
-            try {
-                JSONArray commits= jsonObject.getJSONArray("commits");
-                JSONObject latestCommit = commits.getJSONObject(0);
-                commitMessage = latestCommit.getString("message");
-            } catch (JSONException e) {
-                commitMessage = "N/A";
-            }
+            // Repository owner
+            JSONObject ownerObject = repo.optJSONObject("owner");
+            String owner = ownerObject != null ?
+                    ownerObject.optString("login", "Unknown") :
+                    "Unknown";
 
-            return new PushEventInfo(author, repoURL, SHA, branch, commitMessage);
+
+            String repoName = repo.optString("name", "Unknown");
+
+            String commitMessage = "No commit message";
+
+            // Safe commit parsing
+            JSONArray commits = jsonObject.optJSONArray("commits");
+
+            if (commits != null && commits.length() > 0) {
+                JSONObject latestCommit = commits.getJSONObject(0);
+
+                commitMessage = latestCommit.optString("message", "No commit message");
+            }
+            return new PushEventInfo(
+                    author,
+                    repoURL,
+                    SHA,
+                    branch,
+                    commitMessage,
+                    owner,
+                    repoName
+            );
+            
         } catch (JSONException e) {
-            throw new IllegalArgumentException("Invalid Github push payload", e);
+                throw new IllegalArgumentException("Invalid Github push payload", e);
         }
     }
 
@@ -225,28 +247,28 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * @return Returns the terminal output after the command.
      */
     String runCommand(List<String> command, File directory) throws IOException, InterruptedException {
-	ProcessBuilder processBuilder = new ProcessBuilder(command);
-	processBuilder.directory(directory);
-	processBuilder.redirectErrorStream(true);
-	Process process = processBuilder.start();
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.directory(directory);
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
 
-	try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-		StringBuilder stringBuilder = new StringBuilder();
-		String line;
-		boolean firstLine = true;
-		while ((line = bufferedReader.readLine()) != null) {
-			if (!firstLine) {
-					stringBuilder.append("\n");
-			}
-			stringBuilder.append(line);
-			firstLine = false;
-		}
-		process.waitFor();
-		String output = stringBuilder.toString();
-		return output;
-	} finally {
-		process.destroy();
-	}
+        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            StringBuilder stringBuilder = new StringBuilder();
+            String line;
+            boolean firstLine = true;
+            while ((line = bufferedReader.readLine()) != null) {
+                if (!firstLine) {
+                        stringBuilder.append("\n");
+                }
+                stringBuilder.append(line);
+                firstLine = false;
+            }
+            process.waitFor();
+            String output = stringBuilder.toString();
+            return output;
+        } finally {
+            process.destroy();
+        }
     }
 
 

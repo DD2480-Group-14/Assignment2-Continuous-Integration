@@ -18,4 +18,9 @@ public record PushEventInfo (
     String repoURL,
     String SHA,
     String branch,
-    String commitMessage ) {}
+    String commitMessage,
+    String owner,
+    String repoName ) {
+}
+
+        
