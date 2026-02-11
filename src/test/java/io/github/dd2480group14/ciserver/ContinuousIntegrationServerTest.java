@@ -206,9 +206,9 @@ public class ContinuousIntegrationServerTest {
 		assertThrows(IllegalArgumentException.class, () -> continuousIntegrationServer.extractPushInfo(json));
 	}
 	/**
-	 * Clones a git repository and
-	 * verifies that the .git directory
-	 * exists
+	 * Create a temporary git repository,
+	 * clones it and verifies that the
+	 * .git directory exists
 	 */
 	@Test
 	public void runGitClone(@TempDir Path path) throws IOException, InterruptedException {
