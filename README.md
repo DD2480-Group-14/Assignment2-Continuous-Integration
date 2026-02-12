@@ -1,5 +1,8 @@
 # Assignment2-Continuous-Integration
 
+## Description
+This is a continious integration server which works with github webhooks. When a push is made, the server clones the push and runs tests to see the state of the commit (Does it compile, do any tests fail). The state of the commit is then sent back to github so anyone can see the state of the commit. The server also stores the build logs and makes them accessible through the internet. 
+
 ## Setting up the CI server
 
 ### Dependencies
