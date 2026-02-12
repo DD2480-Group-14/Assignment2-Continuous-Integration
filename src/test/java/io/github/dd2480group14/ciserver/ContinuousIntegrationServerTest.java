@@ -30,10 +30,6 @@ public class ContinuousIntegrationServerTest {
 	    }
 
 
-	    @Test
-	    public void shouldAnswerFail() {
-		assertTrue(false);
-	    }
 	// String testSignature = "test";
 	//    String testToken = "test";
 	//
