@@ -139,7 +139,6 @@ public class ContinuousIntegrationServerTest {
 	public void getBuildLogOutsideOfLogsFolder(@TempDir Path path) throws IOException {
 		File directory = path.toFile();
 		File testFile = new File(directory + "/../42304892.log");
-		System.out.println(testFile.toString());
 		testFile.createNewFile();
 		testFile.deleteOnExit();
 		ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, directory);
