@@ -45,7 +45,9 @@ echo WEBHOOK_SIGNATURE=password123 > .env
 
 ### Generate Github API Token
 
-* go to https://github.com/settings/tokens and generate a new token
+* Go to https://github.com/settings/tokens 
+* Select this repository for "repository access" and give it "write" permission
+* Generate token
 * Set the variable `GITHUB_TOKEN` to the generated token in `.env` file in a similiar manner as previous step
 
 ## Functionality
