@@ -28,3 +28,6 @@ target/
 
 # logs folder
 logs/
+
+# environment variables 
+.env
