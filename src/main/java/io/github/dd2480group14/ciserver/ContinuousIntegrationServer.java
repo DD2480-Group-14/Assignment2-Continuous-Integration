@@ -40,44 +40,35 @@ import io.github.cdimascio.dotenv.Dotenv;
  */
 public class ContinuousIntegrationServer extends AbstractHandler {
     private final File logsFolder;
+    private final GitHubApiClient githubClient;
     private final String signature;
     
+    /**
+     * Constructs a new ContinuousIntegrationServer instance with the default logs folder path.
+     */
+    public ContinuousIntegrationServer(String signature, String githubToken, File logsFolder) {
+        this.logsFolder = logsFolder;
+
+
+        if (!logsFolder.exists()) {
+            logsFolder.mkdir();
+        }
+
+        if (logsFolder.isFile()) {
+            throw new IllegalArgumentException("logsFolder can not be an already existing file.");
+        }
+		this.signature = signature;
+        githubClient = new GitHubApiClient(githubToken);
+    }
     
 
     /**
      * Constructs a new ContinuousIntegrationServer instance with the default logs folder path.
      */
-    public ContinuousIntegrationServer(String signature) {
-        logsFolder = new File("logs");
-
-        if (!logsFolder.exists()) {
-            logsFolder.mkdir();
-        }
-
-        if (logsFolder.isFile()) {
-            throw new IllegalArgumentException("logsFolder can not be an already existing file.");
-        }
-		this.signature = signature;
+    public ContinuousIntegrationServer(String signature, String githubToken) {
+        this(signature, githubToken, new File("logs"));
     }
     
-    /**
-     * Constructs a new ContinuousIntegrationServer instance with a specified logs folder path.
-     * 
-     * @param logsFolder The specified logs folder.
-     */
-    public ContinuousIntegrationServer(File logsFolder, String signature) {
-        this.logsFolder = logsFolder;
-
-        if (!logsFolder.exists()) {
-            logsFolder.mkdir();
-        }
-
-        if (logsFolder.isFile()) {
-            throw new IllegalArgumentException("logsFolder can not be an already existing file.");
-        }
-		this.signature = signature;
-		
-    }
 
     public void handle(String target,
                        Request baseRequest,
@@ -488,8 +479,12 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 		if (webhookSignature == null || webhookSignature.isEmpty()) {
 			throw new IllegalStateException("env variable WEBHOOK_SIGNATURE must be set in .env file");
 		}
+        String githubToken = dotenv.get("GITHUB_TOKEN");
+        if (githubToken == null || githubToken.isEmpty()) {
+			throw new IllegalStateException("env variable GITHUB_TOKEN must be set in .env file");
+		}
         Server server = new Server(8080);
-        server.setHandler(new ContinuousIntegrationServer(webhookSignature)); 
+        server.setHandler(new ContinuousIntegrationServer(webhookSignature, githubToken)); 
         server.start();
         server.join();
     }
