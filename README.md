@@ -65,3 +65,4 @@ Looking at the checklist we have completed the **seeded** phase and **formed** s
 ## Logs
 
 https://unmorally-jacketed-cherlyn.ngrok-free.dev/logs
+
