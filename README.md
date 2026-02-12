@@ -36,12 +36,17 @@ In your Github repository:
 * paste the forwarding URL (from the ngrok terminal) in the field `Payload URL` and then click on `Add webhook`. In the simplest setting, nothing more is required.
 
 ### Add secret to project
-Create .env file in project root and set the variable `WEBHOOK_SIGNATURE` to the password you used in previous step
+Create `.env` file in project root and set the variable `WEBHOOK_SIGNATURE` to the password you used in previous step
 
 Alternatively, one could copy paste and replace "password123" with their "secure" password
 ```bash
 echo WEBHOOK_SIGNATURE=password123 > .env
 ```
+
+### Generate Github API Token
+
+* go to https://github.com/settings/tokens and generate a new token
+* Set the variable `GITHUB_TOKEN` to the generated token in `.env` file in a similiar manner as previous step
 
 ## Functionality
 When the server is running it has the following functionality.
