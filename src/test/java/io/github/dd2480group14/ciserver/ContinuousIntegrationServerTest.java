@@ -381,7 +381,74 @@ public class ContinuousIntegrationServerTest {
 		assertFalse(testFile.exists());
 	}
 
+	/**
+	 * Try to remove root of project
+	 * should fail because its outside
+	 * of the system's temporary folder
+	 */
+	@Test
+	public void removeDirectoryOutsideOfTmp() throws IOException, InterruptedException {
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(testSignature, testToken);
+		File directory = new File("./");
+		assertTrue(directory.exists());
+		assertThrows(IllegalArgumentException.class, () -> continuousIntegrationServer.removeDirectoryInTmp(directory));
+		assertTrue(directory.exists());
+	}
 
+
+
+    /**
+     * Tries to get build logs when there are no
+     * .log files in the directory. Should return
+     * an only a HTML string containing a p element
+     * @param path
+     */ 
+    @Test
+    public void getAllBuildLogsNegative(@TempDir Path path) throws IOException {
+        File dir = path.toFile();
+        File testFile = new File(dir.getPath() + "/log.txt");
+        String message = "This should not be read";
+
+        try {
+        testFile.createNewFile();
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(testFile, true))) {
+            writer.write(message);
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, dir);
+        String logListEmpty = "<table><tr><td> Build ID </td><td> Date </td><td> Commit ID </td></tr></table><style>table, th, td {border: 1px solid black;border-collapse: collapse;text-align: center;}</style>";
+        assertEquals(logListEmpty, ciServer.getBuilds());
+    }
+
+    /**
+     * Create a mock GET request with a target that
+     * should return a 404 response.
+     * @param path
+     */
+    @Test
+    public void handleGETFail(@TempDir Path path) throws Exception {
+        File logsDir = path.toFile();
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, logsDir);
+
+        Request baseRequest = mock(Request.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        StringWriter stringWriter = new StringWriter();
+        when(response.getWriter()).thenReturn(new PrintWriter(stringWriter));
+        when(request.getMethod()).thenReturn("GET");
+
+        ciServer.handle("", baseRequest, request, response);
+
+        // Asserts that the response is a 404 error.
+        verify(response).sendError(404);
+    }
 
     /**
      * Create a mock GET request with target /logs
