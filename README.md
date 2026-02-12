@@ -85,3 +85,8 @@ Looking at the checklist we have completed the **seeded** phase and **formed** s
 - Implemeted http GET functionality for a specific log
 - Documented how to set up the server, how to make it visible from the interner, and how to add the webhook.
 - Reviewed around 1/2 of other team members PRs.
+
+### Edwin Nordås Jogensjö
+- Implemented functionality that stores build logs
+- Implemented the retreiving of all build logs as HTML
+- Created a test-running method and two small maven projects that are compiled and run as tests.
