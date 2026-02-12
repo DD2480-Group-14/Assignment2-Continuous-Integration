@@ -98,3 +98,6 @@ Looking at the checklist we have completed the **seeded** phase and **formed** s
 - Implemented functionality for executing an arbitrary terminal command and safely cloning a repository.
 - Implemented validation of github webhook signature. 
 - Documented essence and dependencies.
+
+### Chua Jia Yi, Clarabelle
+- Implemented functionality of showing commit status on GithHub using GitHub API
