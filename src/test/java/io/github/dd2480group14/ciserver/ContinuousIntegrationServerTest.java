@@ -5,12 +5,19 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Scanner;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.json.JSONObject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -19,6 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /**
  * Unit test for Conitinuous Integration Server.
@@ -49,6 +59,7 @@ public class ContinuousIntegrationServerTest {
      * log with the given message. 
 	 * Retrieveing the log should return the same message.
 	 * Also, retrieving the summary should return the appropriate summary.
+     * @param path
      */
     @Test
     public void getBuildLogPositive(@TempDir Path path) throws IOException {
@@ -87,6 +98,7 @@ public class ContinuousIntegrationServerTest {
 	 * Also, retrieving the summary should return the appropriate summary.
 	 * Note that build date field in the summary should be null
 	 * since it does not exist.
+     * @param path
      */
     @Test
     public void getBuildLogPositiveNoBuildDate(@TempDir Path path) throws IOException {
@@ -120,6 +132,7 @@ public class ContinuousIntegrationServerTest {
      * Creates a new server with empty log folder.
      * Trying to retreive a log (or its summary) should throw
      * NoSuchFileException.
+     * @param path
      */
     @Test
     public void getBuildLogNegative(@TempDir Path path) throws IOException {
@@ -134,6 +147,7 @@ public class ContinuousIntegrationServerTest {
 	 * Creates a new server with empty log folder, and log file
 	 * outside of this folder. Trying to retrieve 
 	 * the log should throw IllegalArgumentException
+     * @param path
 	 */
 	@Test
 	public void getBuildLogOutsideOfLogsFolder(@TempDir Path path) throws IOException {
@@ -212,6 +226,7 @@ public class ContinuousIntegrationServerTest {
 	 * Create a temporary git repository,
 	 * clones it and verifies that the
 	 * .git directory exists
+     * @param path
 	 */
 	@Test
 	public void runGitClone(@TempDir Path path) throws IOException, InterruptedException {
@@ -226,6 +241,7 @@ public class ContinuousIntegrationServerTest {
     /**
      * Creates a new server and writes a log 
      * The file contents should be the same as expected
+     * @param path
      */ 
     @Test
     public void writeLogPositive(@TempDir Path path) {
@@ -260,6 +276,7 @@ public class ContinuousIntegrationServerTest {
      * to test that they are named properly.
      * Should be named 1.log, 2.log, 3.log and 
      * 4.log
+     * @param path
      */ 
     @Test
     public void writeLogSeveral(@TempDir Path path) {
@@ -348,6 +365,7 @@ public class ContinuousIntegrationServerTest {
      * Gets all build logs, which in this case is 
      * 2. The whole message should be equal to
      * the log header + the log summaries
+     * @param path
      */ 
     @Test
     public void getAllBuildLogsPositive(@TempDir Path path) throws IOException {
@@ -397,6 +415,7 @@ public class ContinuousIntegrationServerTest {
      * Tries to get build logs when there are no
      * .log files in the directory. Should return
      * an only a HTML string containing a p element
+     * @param path
      */ 
     @Test
     public void getAllBuildLogsNegative(@TempDir Path path) throws IOException {
@@ -419,6 +438,84 @@ public class ContinuousIntegrationServerTest {
         ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, dir);
         String logListEmpty = "<table><tr><td> Build ID </td><td> Date </td><td> Commit ID </td></tr></table><style>table, th, td {border: 1px solid black;border-collapse: collapse;text-align: center;}</style>";
         assertEquals(logListEmpty, ciServer.getBuilds());
+    }
+
+    /**
+     * Create a mock GET request with a target that
+     * should return a 404 response.
+     * @param path
+     */
+    @Test
+    public void handleGETFail(@TempDir Path path) throws Exception {
+        File logsDir = path.toFile();
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, logsDir);
+
+        Request baseRequest = mock(Request.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        StringWriter stringWriter = new StringWriter();
+        when(response.getWriter()).thenReturn(new PrintWriter(stringWriter));
+        when(request.getMethod()).thenReturn("GET");
+
+        ciServer.handle("", baseRequest, request, response);
+
+        // Asserts that the response is a 404 error.
+        verify(response).sendError(404);
+    }
+
+    /**
+     * Create a mock GET request with target /logs
+     * Also creates a log with a certain commit ID.
+     * The response should contain the commit ID
+     * @param path
+     */
+    @Test
+    public void handleGETlogs(@TempDir Path path) throws Exception {
+        File logsDir = path.toFile();
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, logsDir);
+        String commitID = "hadahid9213u9dva8sdhf9hasd89h";
+        ciServer.storeBuildLog("This is a log", commitID);
+
+        Request baseRequest = mock(Request.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        StringWriter stringWriter = new StringWriter();
+        when(response.getWriter()).thenReturn(new PrintWriter(stringWriter));
+        when(request.getMethod()).thenReturn("GET");
+
+        ciServer.handle("/logs", baseRequest, request, response);
+
+        String output = stringWriter.toString();
+
+        //Assert that the response contains the commit ID
+        assertTrue(output.contains(commitID));
+    }
+
+    /**
+     * Create a mock POST request that is empty.
+     * Since the request is empty we should
+     * get a 400 bad request error as response.
+     * @param path
+     */
+    @Test
+    public void handlePOSTfail(@TempDir Path path) throws Exception {
+        File logsDir = path.toFile();
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, logsDir);
+
+        Request baseRequest = mock(Request.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        StringWriter stringWriter = new StringWriter();
+        when(response.getWriter()).thenReturn(new PrintWriter(stringWriter));
+        when(request.getMethod()).thenReturn("POST");
+
+        ciServer.handle("", baseRequest, request, response);
+
+        // Asserts that the response is a 400 error.
+        verify(response).sendError(400);
     }
 }
 
