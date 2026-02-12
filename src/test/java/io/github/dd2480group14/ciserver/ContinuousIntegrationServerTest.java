@@ -440,7 +440,7 @@ public class ContinuousIntegrationServerTest {
     @Test
     public void handleGETFail(@TempDir Path path) throws Exception {
         File logsDir = path.toFile();
-        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(logsDir, testSignature);
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, logsDir);
 
         Request baseRequest = mock(Request.class);
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -464,7 +464,7 @@ public class ContinuousIntegrationServerTest {
     @Test
     public void handleGETlogs(@TempDir Path path) throws Exception {
         File logsDir = path.toFile();
-        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(logsDir, testSignature);
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, logsDir);
         String commitID = "hadahid9213u9dva8sdhf9hasd89h";
         ciServer.storeBuildLog("This is a log", commitID);
 
@@ -492,7 +492,7 @@ public class ContinuousIntegrationServerTest {
     @Test
     public void handlePOSTfail(@TempDir Path path) throws Exception {
         File logsDir = path.toFile();
-        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(logsDir, testSignature);
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, logsDir);
 
         Request baseRequest = mock(Request.class);
         HttpServletRequest request = mock(HttpServletRequest.class);
