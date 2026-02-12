@@ -126,8 +126,18 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
                 File gitDirectory = gitClone(info.repoURL(), info.SHA());
                 String testLog = runTests(gitDirectory);
+				String description;
                 storeBuildLog(testLog, info.SHA());
-                
+				String state;
+				if (mvnTestOutputSucceeded(testLog)) {
+							state = "success";
+							description = "mvn test succeeded";
+				} else {
+							state = "failure";
+							description = "mvn test failed";
+				}
+				githubClient.updateCommitStatus(info.repoURL(), info.SHA(), state, description, null);
+
                 // TO DO: Run CI Pipeline
 
             } else {
@@ -140,6 +150,14 @@ public class ContinuousIntegrationServer extends AbstractHandler {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
+
+	private boolean mvnTestOutputSucceeded(String testLog) {
+		if (testLog.contains("BUILD SUCCESS")) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 
     /**
      * Validates the incoming github webhook signature of the
