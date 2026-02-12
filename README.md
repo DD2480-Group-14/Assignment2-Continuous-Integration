@@ -93,3 +93,8 @@ Looking at the checklist we have completed the **seeded** phase and **formed** s
 - Implemented functionality that stores build logs
 - Implemented the retreiving of all build logs as HTML
 - Created a test-running method and two small maven projects that are compiled and run as tests.
+
+### Vidar Nykvist 
+- Implemented functionality for executing an arbitrary terminal command and safely cloning a repository.
+- Implemented validation of github webhook signature. 
+- Documented essence and dependencies.
