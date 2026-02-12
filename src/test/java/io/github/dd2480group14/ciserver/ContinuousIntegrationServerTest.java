@@ -588,7 +588,7 @@ public class ContinuousIntegrationServerTest {
 	 * @param path
 	 */
 	@Test
-	public void handleNotificationFail(@TempDir Path path) throws Exception {
+	public void handleNotificationMvnTestFailure(@TempDir Path path) throws Exception {
 
 		File logsDir = path.toFile();
 		GitHubApiClient mockClient = mock(GitHubApiClient.class);
