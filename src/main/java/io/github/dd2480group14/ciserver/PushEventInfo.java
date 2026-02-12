@@ -17,7 +17,7 @@ import org.json.JSONObject;
  * @param commitMessage Commit message of the push event
 */
 
-public record PushEventInfo (
+record PushEventInfo (
     String author,
     String repoURL,
     String SHA,
