@@ -28,6 +28,12 @@ public class ContinuousIntegrationServerTest {
 	    public void shouldAnswerWithTrue() {
 		assertTrue(true);
 	    }
+
+
+	    @Test
+	    public void shouldAnswerFail() {
+		assertTrue(false);
+	    }
 	// String testSignature = "test";
 	//    String testToken = "test";
 	//
