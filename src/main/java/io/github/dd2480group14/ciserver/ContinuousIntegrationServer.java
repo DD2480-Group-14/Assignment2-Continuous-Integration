@@ -79,8 +79,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         response.setContentType("text/html;charset=utf-8");
         baseRequest.setHandled(true);
 
-        System.out.println(target);
-
         switch (request.getMethod().toUpperCase()) {
             case "POST":
                 handlePost(target, baseRequest, request, response);
@@ -119,7 +117,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 			validateGithubSignature(githubSignature, body);
             String urlDecoded = URLDecoder.decode(body, StandardCharsets.UTF_8);
             String jsonStr = urlDecoded.replace("payload=", "");
-            System.out.println(jsonStr);
             JSONObject jsonObject = new JSONObject(jsonStr);
 
             if ("push".equals(githubEvent)) {
