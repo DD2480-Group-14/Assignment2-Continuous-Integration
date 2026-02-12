@@ -101,3 +101,6 @@ Looking at the checklist we have completed the **seeded** phase and **formed** s
 
 ### Chua Jia Yi, Clarabelle
 - Implemented functionality of showing commit status on GithHub using GitHub API
+
+### Maria Pettersson
+- Implemented parsing of Github webhook payload with validation and error handling.
