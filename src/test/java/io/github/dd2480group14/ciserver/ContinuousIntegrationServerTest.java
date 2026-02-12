@@ -1,12 +1,16 @@
 package io.github.dd2480group14.ciserver;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.io.StringWriter;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -16,6 +20,7 @@ import java.util.Scanner;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.codec.digest.HmacUtils;
 import org.eclipse.jetty.server.Request;
 import org.json.JSONObject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,6 +32,7 @@ import org.junit.jupiter.api.io.TempDir;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.eq;
 
 /**
  * Unit test for Conitinuous Integration Server.
@@ -567,5 +573,66 @@ public class ContinuousIntegrationServerTest {
         // Asserts that the response is a 400 error.
         verify(response).sendError(400);
     }
-}
 
+
+	/**
+	 * Creates a empty local git repository and then
+	 * creates a mock github webhook POST request for the created 
+	 * git repository, also send in mock of GithubApiClient.
+	 * handle() then sends this to handlePost() which 
+	 * verifies the fake/calculated signature and then proceeds to
+	 * run mvn test which should fail because its an empty directory.
+	 * Thereby the commit status should be "failure" but the 
+	 * status code for the request should be success 200
+	 * 
+	 * @param path
+	 */
+	@Test
+	public void handleNotificationMvnTestFailure(@TempDir Path path) throws Exception {
+
+		File logsDir = path.toFile();
+		GitHubApiClient mockClient = mock(GitHubApiClient.class);
+		ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, logsDir,mockClient);
+		ciServer.runCommand(List.of("git", "init"), path.toFile());
+		String url = path.toString();
+
+		String fakePayload = String.format("""
+				{
+					"ref": "refs/heads/example",
+					"after": "123123",
+					"repository": {
+						"clone_url": "%s"
+					},
+					"pusher": {
+						"name": "test-user"
+					},
+					"commits": [
+						{
+							"message": "Initial commit"
+						}
+					]
+				}
+				""", url);
+		String fakePayLoadEncoded = URLEncoder.encode(fakePayload, StandardCharsets.UTF_8);
+		String body = String.format("payload=%s", fakePayLoadEncoded);
+		String calculatedHmac = new HmacUtils("HmacSHA256", testSignature).hmacHex(body);
+		String signature = String.format("sha256=%s", calculatedHmac);
+
+		Request baseRequest = mock(Request.class);
+		StringWriter stringWriter = new StringWriter();
+		HttpServletRequest request = mock(HttpServletRequest.class);
+		HttpServletResponse response = mock(HttpServletResponse.class);
+		BufferedReader reader = new BufferedReader(new StringReader(body));
+
+		when(request.getReader()).thenReturn(reader);
+		when(request.getHeader("X-GitHub-Event")).thenReturn("push");
+		when(request.getHeader("X-Hub-Signature-256")).thenReturn(signature);
+		when(response.getWriter()).thenReturn(new PrintWriter(stringWriter));
+		when(request.getMethod()).thenReturn("POST");
+
+		ciServer.handle("", baseRequest, request, response);
+
+		verify(mockClient).updateCommitStatus(url, "123123", "failure", "mvn test failed", null);
+		verify(response).setStatus(HttpServletResponse.SC_OK);
+	}
+}
