@@ -503,4 +503,3 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         server.join();
     }
 }
-
