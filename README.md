@@ -50,3 +50,7 @@ When the server is running it has the following functionality.
 - If you are on the machine that runs the server, you can go to http://localhost:8080/logs.
 
 - If you are using forwarding with ngrok, you can visit your forwarding URL and append /logs (eg http://someurl.ngork.io/logs).
+
+## Essence
+
+Looking at the checklist we have completed the **seeded** phase and **formed** stage after the first assignment. We would argue that we are currently in the **collaborating** phase. This is primarly because of the "The team members know and trust each other" check, we are still getting to know each other. Overtime, by continuing to collaborate and communicating, we will get to know each other better and trust each other more and eventually be able to move on to the **performing** stage.
