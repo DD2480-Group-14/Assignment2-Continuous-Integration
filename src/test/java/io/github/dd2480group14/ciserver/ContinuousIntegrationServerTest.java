@@ -445,34 +445,144 @@ public class ContinuousIntegrationServerTest {
         assertEquals(fullLogList, ciServer.getBuilds());
     }
 
+
     /**
-     * Tries to get build logs when there are no
-     * .log files in the directory. Should return
-     * an only a HTML string containing a p element
+     * Create a mock GET request with a target that
+     * should return a 404 response.
      * @param path
-     */ 
+     */
     @Test
-    public void getAllBuildLogsNegative(@TempDir Path path) throws IOException {
-        File dir = path.toFile();
-        File testFile = new File(dir.getPath() + "/log.txt");
-        String message = "This should not be read";
+    public void handleGETFail(@TempDir Path path) throws Exception {
+        File logsDir = path.toFile();
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, logsDir);
 
-        try {
-        testFile.createNewFile();
-        } catch (IOException e) {
-            assertTrue(false);
-        }
+        Request baseRequest = mock(Request.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
 
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(testFile, true))) {
-            writer.write(message);
-        } catch (IOException e) {
-            assertTrue(false);
-        }
+        StringWriter stringWriter = new StringWriter();
+        when(response.getWriter()).thenReturn(new PrintWriter(stringWriter));
+        when(request.getMethod()).thenReturn("GET");
 
-        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, dir);
-        String logListEmpty = "<table><tr><td> Build ID </td><td> Date </td><td> Commit ID </td></tr></table><style>table, th, td {border: 1px solid black;border-collapse: collapse;text-align: center;}</style>";
-        assertEquals(logListEmpty, ciServer.getBuilds());
+        ciServer.handle("", baseRequest, request, response);
+
+        // Asserts that the response is a 404 error.
+        verify(response).sendError(404);
+    }
+
+    /**
+     * Create a mock GET request with target /logs
+     * Also creates a log with a certain commit ID.
+     * The response should contain the commit ID
+     * @param path
+     */
+    @Test
+    public void handleGETlogs(@TempDir Path path) throws Exception {
+        File logsDir = path.toFile();
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, logsDir);
+        String commitID = "hadahid9213u9dva8sdhf9hasd89h";
+        ciServer.storeBuildLog("This is a log", commitID);
+
+        Request baseRequest = mock(Request.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        StringWriter stringWriter = new StringWriter();
+        when(response.getWriter()).thenReturn(new PrintWriter(stringWriter));
+        when(request.getMethod()).thenReturn("GET");
+
+        ciServer.handle("/logs", baseRequest, request, response);
+
+        String output = stringWriter.toString();
+
+        //Assert that the response contains the commit ID
+        assertTrue(output.contains(commitID));
+    }
+
+    /**
+     * Create a mock POST request that is empty.
+     * Since the request is empty we should
+     * get a 400 bad request error as response.
+     * @param path
+     */
+    @Test
+    public void handlePOSTfail(@TempDir Path path) throws Exception {
+        File logsDir = path.toFile();
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, logsDir);
+
+        Request baseRequest = mock(Request.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        StringWriter stringWriter = new StringWriter();
+        when(response.getWriter()).thenReturn(new PrintWriter(stringWriter));
+        when(request.getMethod()).thenReturn("POST");
+
+        ciServer.handle("", baseRequest, request, response);
+
+        // Asserts that the response is a 400 error.
+        verify(response).sendError(400);
     }
 
 
+	/**
+	 * Creates a empty local git repository and then
+	 * creates a mock github webhook POST request for the created 
+	 * git repository, also send in mock of GithubApiClient.
+	 * handle() then sends this to handlePost() which 
+	 * verifies the fake/calculated signature and then proceeds to
+	 * run mvn test which should fail because its an empty directory.
+	 * Thereby the commit status should be "failure" but the 
+	 * status code for the request should be success 200
+	 * 
+	 * @param path
+	 */
+	@Test
+	public void handleNotificationMvnTestFailure(@TempDir Path path) throws Exception {
+
+		File logsDir = path.toFile();
+		GitHubApiClient mockClient = mock(GitHubApiClient.class);
+		ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, logsDir,mockClient);
+		ciServer.runCommand(List.of("git", "init"), path.toFile());
+		String url = path.toString();
+
+		String fakePayload = String.format("""
+				{
+					"ref": "refs/heads/example",
+					"after": "123123",
+					"repository": {
+						"clone_url": "%s"
+					},
+					"pusher": {
+						"name": "test-user"
+					},
+					"commits": [
+						{
+							"message": "Initial commit"
+						}
+					]
+				}
+				""", url);
+		String fakePayLoadEncoded = URLEncoder.encode(fakePayload, StandardCharsets.UTF_8);
+		String body = String.format("payload=%s", fakePayLoadEncoded);
+		String calculatedHmac = new HmacUtils("HmacSHA256", testSignature).hmacHex(body);
+		String signature = String.format("sha256=%s", calculatedHmac);
+
+		Request baseRequest = mock(Request.class);
+		StringWriter stringWriter = new StringWriter();
+		HttpServletRequest request = mock(HttpServletRequest.class);
+		HttpServletResponse response = mock(HttpServletResponse.class);
+		BufferedReader reader = new BufferedReader(new StringReader(body));
+
+		when(request.getReader()).thenReturn(reader);
+		when(request.getHeader("X-GitHub-Event")).thenReturn("push");
+		when(request.getHeader("X-Hub-Signature-256")).thenReturn(signature);
+		when(response.getWriter()).thenReturn(new PrintWriter(stringWriter));
+		when(request.getMethod()).thenReturn("POST");
+
+		ciServer.handle("", baseRequest, request, response);
+
+		verify(mockClient).updateCommitStatus(url, "123123", "failure", "mvn test failed", null);
+		verify(response).setStatus(HttpServletResponse.SC_OK);
+	}
 }
