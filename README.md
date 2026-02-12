@@ -68,6 +68,13 @@ The test execution is carried out by creating a new process and running the comm
 ### Unit testing
 Unit testing is implemented with the ```JUnit``` library. Each public method have at least one corresponing unit test to test its functionality. Several methods require writing and/or reading files, which is done by creating files and directories within a temporary directory. The temporary directory, ```@TempDir``` in JUnit, helps managing temporary files used during testing.
 
+## Documentation
+A browsable documenation using Javadoc can be generated with the following command:
+
+```mvn javadoc:javadoc```
+
+The documenation becomes available under ```target/reports/apidocs```. 
+
 ## Essence
 
 Looking at the checklist we have completed the **seeded** phase and **formed** stage after the first assignment. We would argue that we are currently in the **collaborating** phase. This is primarly because of the "The team members know and trust each other" check, we are still getting to know each other. Overtime, by continuing to collaborate and communicating, we will get to know each other better and trust each other more and eventually be able to move on to the **performing** stage.
