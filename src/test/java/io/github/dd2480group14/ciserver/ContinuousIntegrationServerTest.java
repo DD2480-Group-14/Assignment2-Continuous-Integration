@@ -578,7 +578,8 @@ public class ContinuousIntegrationServerTest {
 	/**
 	 * Creates a empty local git repository and then
 	 * creates a mock github webhook POST request for the created 
-	 * git repository. handle() sends this to handlePost() which 
+	 * git repository, also send in mock of GithubApiClient.
+	 * handle() then sends this to handlePost() which 
 	 * verifies the fake/calculated signature and then proceeds to
 	 * run mvn test which should fail because its an empty directory.
 	 * Thereby the commit status should be "failure" but the 
