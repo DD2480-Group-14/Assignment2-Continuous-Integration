@@ -17,7 +17,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.json.JSONObject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -25,10 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit test for Conitinuous Integration Server.
@@ -179,7 +177,7 @@ public class ContinuousIntegrationServerTest {
 	 * repository URL, commit SHA, branch name, author and commit message.
 	 */
 	@Test
-	public void testExtractPushInfo() {
+	public void fromJSONCorrectParsing() {
 		String payload = """
 			{
 				"ref": "refs/heads/example",
@@ -209,11 +207,62 @@ public class ContinuousIntegrationServerTest {
 		assertEquals("Initial commit", info.commitMessage());
 	}
 
+    /**
+     * Verifies that owner defaults to "Unknown" 
+     * when owner field is missing from the payload.
+     */
+    @Test
+    public void fromJSONMissingOwnerField() {
+		String payload = """
+			{
+				"ref": "refs/heads/main",
+				"after": "123123",
+				"repository": {
+					"clone_url": "https://github.com/test/example.git"
+				},
+				"pusher": {
+					"name": "test-user"
+				}
+			}
+			""";
+
+        JSONObject json = new JSONObject(payload);
+
+        PushEventInfo info = PushEventInfo.fromJSON(json);
+        assertEquals("Unknown", info.owner());
+    }
+
+
+    /**
+     * Verifies that commit message defaults to "No commit message"
+     * when the commits field is missing from the payload.
+     */
+    @Test
+    public void fromJSONMissingCommitMessage() {
+		String payload = """
+			{
+				"ref": "refs/heads/main",
+				"after": "123123",
+				"repository": {
+					"clone_url": "https://github.com/test/example.git"
+				},
+				"pusher": {
+					"name": "test-user"
+				}
+			}
+			""";
+
+        JSONObject json = new JSONObject(payload);
+
+        PushEventInfo info = PushEventInfo.fromJSON(json);
+        assertEquals("No commit message", info.commitMessage());
+    }
+
 	/**
 	 * Should throw an exception when payload lacks required fields.
 	 */
 	@Test
-	public void testNonPushWebhookEvent() {
+	public void NonPushWebhookEventThrows() {
 		String payload = "{}";
 
 		JSONObject json = new JSONObject(payload);
@@ -222,6 +271,7 @@ public class ContinuousIntegrationServerTest {
 
 		assertThrows(IllegalArgumentException.class, () -> PushEventInfo.fromJSON(json));
 	}
+
 	/**
 	 * Create a temporary git repository,
 	 * clones it and verifies that the
