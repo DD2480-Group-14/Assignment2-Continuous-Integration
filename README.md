@@ -72,3 +72,9 @@ Unit testing is implemented with the ```JUnit``` library. Each public method hav
 
 Looking at the checklist we have completed the **seeded** phase and **formed** stage after the first assignment. We would argue that we are currently in the **collaborating** phase. This is primarly because of the "The team members know and trust each other" check, we are still getting to know each other. Overtime, by continuing to collaborate and communicating, we will get to know each other better and trust each other more and eventually be able to move on to the **performing** stage.
 
+## Contributions
+
+### Melker Trané
+- Implemeted http GET functionality for a specific log
+- Documented how to set up the server, how to make it visible from the interner, and how to add the webhook.
+- Reviewed around 1/2 of other team members PRs.
