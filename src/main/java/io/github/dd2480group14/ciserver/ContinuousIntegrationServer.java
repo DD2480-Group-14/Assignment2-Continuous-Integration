@@ -11,6 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -22,6 +24,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.codec.digest.HmacUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.Request;
@@ -30,16 +33,21 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import io.github.cdimascio.dotenv.Dotenv;
+
 /** 
  *A ContinuousIntegrationServer which acts as webhook.
  */
 public class ContinuousIntegrationServer extends AbstractHandler {
     private final File logsFolder;
+    private final String signature;
+    
+    
 
     /**
      * Constructs a new ContinuousIntegrationServer instance with the default logs folder path.
      */
-    public ContinuousIntegrationServer() {
+    public ContinuousIntegrationServer(String signature) {
         logsFolder = new File("logs");
 
         if (!logsFolder.exists()) {
@@ -49,6 +57,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         if (logsFolder.isFile()) {
             throw new IllegalArgumentException("logsFolder can not be an already existing file.");
         }
+		this.signature = signature;
     }
     
     /**
@@ -56,7 +65,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      * 
      * @param logsFolder The specified logs folder.
      */
-    public ContinuousIntegrationServer(File logsFolder) {
+    public ContinuousIntegrationServer(File logsFolder, String signature) {
         this.logsFolder = logsFolder;
 
         if (!logsFolder.exists()) {
@@ -66,6 +75,8 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         if (logsFolder.isFile()) {
             throw new IllegalArgumentException("logsFolder can not be an already existing file.");
         }
+		this.signature = signature;
+		
     }
 
     public void handle(String target,
@@ -111,9 +122,10 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         throws IOException, ServletException
     {
         String githubEvent = request.getHeader("X-GitHub-Event");
-
+        	String githubSignature = request.getHeader("X-Hub-Signature-256");
         try {
             String body = IOUtils.toString(request.getReader());
+			validateGithubSignature(githubSignature, body);
             String urlDecoded = URLDecoder.decode(body, StandardCharsets.UTF_8);
             String jsonStr = urlDecoded.replace("payload=", "");
             System.out.println(jsonStr);
@@ -121,7 +133,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
             if ("push".equals(githubEvent)) {
                 PushEventInfo info = PushEventInfo.fromJSON(jsonObject);
-                
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().println("Push event recieved.");
 
@@ -129,14 +140,32 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                 String testLog = runTests(gitDirectory);
                 storeBuildLog(testLog, info.SHA());
                 
+                // TO DO: Run CI Pipeline
+
             } else {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().println("No push event recieved. Event ignored.");
             }
-
+        } catch (SecurityException e) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
         } catch (IllegalArgumentException | JSONException | InterruptedException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
+    }
+
+    /**
+     * Validates the incoming github webhook signature of the
+     * payload and throws SecurityException if invalid
+     */
+    private void validateGithubSignature(String githubSignature, String body) throws SecurityException, IllegalArgumentException {
+		if (githubSignature == null || githubSignature.isEmpty()) {
+			throw new IllegalArgumentException("Github Signature cant be null");
+		}
+		String calculatedHmac = new HmacUtils("HmacSHA256", signature).hmacHex(body);
+		boolean signaturesAreEqual = githubSignature.equals("sha256=" + calculatedHmac);
+		if (!signaturesAreEqual) {
+			throw new SecurityException("Signature does not match webhook");
+		}
     }
 
     private void handleGet(String target,
@@ -452,8 +481,13 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      */
     public static void main(String[] args) throws Exception
     {
+		Dotenv dotenv = Dotenv.load();
+		String webhookSignature = dotenv.get("WEBHOOK_SIGNATURE");
+		if (webhookSignature == null || webhookSignature.isEmpty()) {
+			throw new IllegalStateException("env variable WEBHOOK_SIGNATURE must be set in .env file");
+		}
         Server server = new Server(8080);
-        server.setHandler(new ContinuousIntegrationServer()); 
+        server.setHandler(new ContinuousIntegrationServer(webhookSignature)); 
         server.start();
         server.join();
     }
