@@ -132,15 +132,12 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                 storeBuildLog(testLog, info.SHA());
 
 		String state;
-		String description;
 		if (mvnTestOutputSucceeded(testLog)) {
 					state = "success";
-					description = "Test succeeded";
 		} else {
 					state = "failure";
-					description = "Test failed";
 		}
-		githubClient.updateCommitStatus(info.repoURL(), info.SHA(), state, description, null);
+		githubClient.updateCommitStatus(info.repoURL(), info.SHA(), state, testLog, null);
 
                 // TO DO: Run CI Pipeline
 
