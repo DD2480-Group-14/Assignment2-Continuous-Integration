@@ -60,6 +60,25 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 		this.signature = signature;
         githubClient = new GitHubApiClient(githubToken);
     }
+
+
+    /**
+     * Constructs a new ContinuousIntegrationServer instance
+     */
+    public ContinuousIntegrationServer(String signature, File logsFolder, GitHubApiClient githubClient) {
+        this.logsFolder = logsFolder;
+
+
+        if (!logsFolder.exists()) {
+            logsFolder.mkdir();
+        }
+
+        if (logsFolder.isFile()) {
+            throw new IllegalArgumentException("logsFolder can not be an already existing file.");
+        }
+		this.signature = signature;
+        	this.githubClient = githubClient;
+    }
     
 
     /**
