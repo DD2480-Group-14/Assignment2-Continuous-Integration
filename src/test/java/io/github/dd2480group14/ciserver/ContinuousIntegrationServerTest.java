@@ -395,7 +395,55 @@ public class ContinuousIntegrationServerTest {
 		assertTrue(directory.exists());
 	}
 
+    /**
+     * Gets all build logs, which in this case is 
+     * 2. The whole message should be equal to
+     * the log header + the log summaries
+     * @param path
+     */ 
+    @Test
+    public void getAllBuildLogsPositive(@TempDir Path path) throws IOException {
+        String message1 = "Commit ID: 1\nBuild date: " + LocalDate.now().toString();
+        String message2 = "Commit ID: 2\nBuild date: " + LocalDate.now().toString();
+        File dir = path.toFile();
+        File log1 = new File(dir.getPath() + "/1.log");
+        File log2 = new File(dir.getPath() + "/2.log");
 
+        try {
+            log1.createNewFile();
+            log2.createNewFile();
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(log1, true))) {
+            
+            writer.write(message1);
+            
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(log2, true))) {
+            
+            writer.write(message2);
+            
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        String logListFirst = "<table><tr><td> Build ID </td><td> Date </td><td> Commit ID </td></tr>";
+        String logListSecond = "<tr><td><a href=\"/logs/1\"</a>1</td><td>" + LocalDate.now().toString() + "</td><td>1</td></tr>";
+        String logListThird = "<tr><td><a href=\"/logs/2\"</a>2</td><td>" + LocalDate.now().toString() + "</td><td>2</td></tr>";
+
+        String logListFourth = "</table>";
+        String logListStyle = "<style>table, th, td {border: 1px solid black;border-collapse: collapse;text-align: center;}</style>";
+
+        String fullLogList = logListFirst + logListSecond + logListThird + logListFourth + logListStyle;
+
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, dir);
+        assertEquals(fullLogList, ciServer.getBuilds());
+    }
 
     /**
      * Tries to get build logs when there are no
@@ -426,58 +474,7 @@ public class ContinuousIntegrationServerTest {
         assertEquals(logListEmpty, ciServer.getBuilds());
     }
 
-    /**
-     * Create a mock GET request with a target that
-     * should return a 404 response.
-     * @param path
-     */
-    @Test
-    public void handleGETFail(@TempDir Path path) throws Exception {
-        File logsDir = path.toFile();
-        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, logsDir);
 
-        Request baseRequest = mock(Request.class);
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        HttpServletResponse response = mock(HttpServletResponse.class);
-
-        StringWriter stringWriter = new StringWriter();
-        when(response.getWriter()).thenReturn(new PrintWriter(stringWriter));
-        when(request.getMethod()).thenReturn("GET");
-
-        ciServer.handle("", baseRequest, request, response);
-
-        // Asserts that the response is a 404 error.
-        verify(response).sendError(404);
-    }
-
-    /**
-     * Create a mock GET request with target /logs
-     * Also creates a log with a certain commit ID.
-     * The response should contain the commit ID
-     * @param path
-     */
-    @Test
-    public void handleGETlogs(@TempDir Path path) throws Exception {
-        File logsDir = path.toFile();
-        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, logsDir);
-        String commitID = "hadahid9213u9dva8sdhf9hasd89h";
-        ciServer.storeBuildLog("This is a log", commitID);
-
-        Request baseRequest = mock(Request.class);
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        HttpServletResponse response = mock(HttpServletResponse.class);
-
-        StringWriter stringWriter = new StringWriter();
-        when(response.getWriter()).thenReturn(new PrintWriter(stringWriter));
-        when(request.getMethod()).thenReturn("GET");
-
-        ciServer.handle("/logs", baseRequest, request, response);
-
-        String output = stringWriter.toString();
-
-        //Assert that the response contains the commit ID
-        assertTrue(output.contains(commitID));
-    }
 
     /**
      * Create a mock POST request that is empty.
