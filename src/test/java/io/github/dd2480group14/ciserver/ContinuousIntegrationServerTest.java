@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Scanner;
 
 import org.json.JSONObject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -18,13 +19,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.util.Scanner;
-
 
 /**
  * Unit test for Conitinuous Integration Server.
  */
 public class ContinuousIntegrationServerTest {
+	String testSignature = "test";
+    String testToken = "test";
+
+
 	/**
 	 * The command "echo Testing" should
 	 * give the output "Testing"
@@ -33,7 +36,7 @@ public class ContinuousIntegrationServerTest {
 	 */
 	@Test
 	public void runCommandOutput() throws IOException, InterruptedException {
-		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(testSignature, testToken);
 		File directory = new File("./");
 		List<String> command = List.of("echo", "Testing");
 		String output = continuousIntegrationServer.runCommand(command, directory);
@@ -54,6 +57,7 @@ public class ContinuousIntegrationServerTest {
         String message = "Commit ID: " + commitId
 					   + "\nBuild date: " + buildDate
 					   + "\nAdditional log content\n";
+        String summary = "<tr><td><a href=\"/logs/1\"</a>1</td><td>" + buildDate + "</td><td>" + commitId + "</td></tr>";
 
         File dir = path.toFile();
         File log = new File(dir.getPath() + "/1.log");
@@ -71,9 +75,9 @@ public class ContinuousIntegrationServerTest {
             assertTrue(false);
         }
 
-        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, dir);
         assertEquals(message, ciServer.getBuildLog("1"));
-        assertEquals("1 " + buildDate + " " + commitId, ciServer.getBuildLogSummary("1"));
+        assertEquals(summary, ciServer.getBuildLogHTMLTableRow("1"));
     }
 
 	/**
@@ -89,6 +93,7 @@ public class ContinuousIntegrationServerTest {
 		String commitId = "123";
         String message = "Commit ID: " + commitId
 					   + "\nAdditional log content\n";
+        String summary = "<tr><td><a href=\"/logs/1\"</a>1</td><td>" + null + "</td><td>" + commitId + "</td></tr>";
 
         File dir = path.toFile();
         File log = new File(dir.getPath() + "/1.log");
@@ -106,9 +111,9 @@ public class ContinuousIntegrationServerTest {
             assertTrue(false);
         }
 
-        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, dir);
         assertEquals(message, ciServer.getBuildLog("1"));
-        assertEquals("1 " + null + " " + commitId, ciServer.getBuildLogSummary("1"));
+        assertEquals(summary, ciServer.getBuildLogHTMLTableRow("1"));
     }
 
     /**
@@ -119,9 +124,9 @@ public class ContinuousIntegrationServerTest {
     @Test
     public void getBuildLogNegative(@TempDir Path path) throws IOException {
         File dir = path.toFile();
-        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, dir);
 		assertThrows(FileNotFoundException.class, () -> ciServer.getBuildLog("1"));
-		assertThrows(FileNotFoundException.class, () -> ciServer.getBuildLogSummary("1"));
+		assertThrows(FileNotFoundException.class, () -> ciServer.getBuildLogHTMLTableRow("1"));
     }
 
 
@@ -137,7 +142,7 @@ public class ContinuousIntegrationServerTest {
 		System.out.println(testFile.toString());
 		testFile.createNewFile();
 		testFile.deleteOnExit();
-		ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(directory);
+		ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, directory);
 		assertThrows(IllegalArgumentException.class, () -> ciServer.getBuildLog("../42304892"));
 	}
 
@@ -149,7 +154,7 @@ public class ContinuousIntegrationServerTest {
 	 */
 	@Test
 	public void runCommandFail() {
-		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(testSignature, testToken);
 		File directory = new File("./");
 		List<String> command = List.of("Fakecommand");
 		assertThrows(IOException.class, () -> continuousIntegrationServer.runCommand(command, directory));
@@ -182,8 +187,7 @@ public class ContinuousIntegrationServerTest {
 
 		JSONObject json = new JSONObject(payload);
 
-		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
-		PushEventInfo info = continuousIntegrationServer.extractPushInfo(json);
+		PushEventInfo info = PushEventInfo.fromJSON(json);
 
 		assertEquals("https://github.com/test/example.git", info.repoURL());
 		assertEquals("123123", info.SHA());
@@ -201,9 +205,9 @@ public class ContinuousIntegrationServerTest {
 
 		JSONObject json = new JSONObject(payload);
 
-		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(testSignature, testToken);
 
-		assertThrows(IllegalArgumentException.class, () -> continuousIntegrationServer.extractPushInfo(json));
+		assertThrows(IllegalArgumentException.class, () -> PushEventInfo.fromJSON(json));
 	}
 	/**
 	 * Create a temporary git repository,
@@ -212,7 +216,7 @@ public class ContinuousIntegrationServerTest {
 	 */
 	@Test
 	public void runGitClone(@TempDir Path path) throws IOException, InterruptedException {
-		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(testSignature, testToken);
 		continuousIntegrationServer.runCommand(List.of("git", "init"), path.toFile());
 		String url = path.toString();
 		File tempDirectory = continuousIntegrationServer.gitClone(url, null);
@@ -227,7 +231,7 @@ public class ContinuousIntegrationServerTest {
     @Test
     public void writeLogPositive(@TempDir Path path) {
         File dir = path.toFile();
-        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(dir);
+        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(testSignature, testToken, dir);
         String commitId = "test";
         String log = "Text in file";
 
@@ -261,7 +265,7 @@ public class ContinuousIntegrationServerTest {
     @Test
     public void writeLogSeveral(@TempDir Path path) {
         File dir = path.toFile();
-        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(dir);
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, dir);
         String commitId = "test";
         String log = "Text in file";
         
@@ -288,7 +292,7 @@ public class ContinuousIntegrationServerTest {
      */
     @Test
     public void runMavenTestSuccessfull() throws IOException, InterruptedException {
-        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(testSignature, testToken);
         File directory = new File("src/test/resources/maven-projects/small-maven-success");
         String output = continuousIntegrationServer.runTests(directory);
         assertTrue(output.contains("BUILD SUCCESS"));
@@ -300,7 +304,7 @@ public class ContinuousIntegrationServerTest {
      */
     @Test
     public void runMavenTestFail() throws IOException, InterruptedException {
-        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+        ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(testSignature, testToken);
         File directory = new File("src/test/resources/maven-projects/small-maven-fail");
         String output = continuousIntegrationServer.runTests(directory);
         assertTrue(output.contains("BUILD FAIL"));
@@ -314,7 +318,7 @@ public class ContinuousIntegrationServerTest {
 	 */
 	@Test
 	public void removeDirectoryAndSubfileInTmp() throws IOException, InterruptedException {
-		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(testSignature, testToken);
 		File directory = Files.createTempDirectory("test").toFile();
 		String testFileName = "test.py";
 		File testFile = new File(directory, testFileName);
@@ -334,11 +338,88 @@ public class ContinuousIntegrationServerTest {
 	 */
 	@Test
 	public void removeDirectoryOutsideOfTmp() throws IOException, InterruptedException {
-		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer();
+		ContinuousIntegrationServer continuousIntegrationServer = new ContinuousIntegrationServer(testSignature, testToken);
 		File directory = new File("./");
 		assertTrue(directory.exists());
 		assertThrows(IllegalArgumentException.class, () -> continuousIntegrationServer.removeDirectoryInTmp(directory));
 		assertTrue(directory.exists());
 	}
+
+    /**
+     * Gets all build logs, which in this case is 
+     * 2. The whole message should be equal to
+     * the log header + the log summaries
+     */ 
+    @Test
+    public void getAllBuildLogsPositive(@TempDir Path path) throws IOException {
+        String message1 = "Commit ID: 1\nBuild date: " + LocalDate.now().toString();
+        String message2 = "Commit ID: 2\nBuild date: " + LocalDate.now().toString();
+        File dir = path.toFile();
+        File log1 = new File(dir.getPath() + "/1.log");
+        File log2 = new File(dir.getPath() + "/2.log");
+
+        try {
+            log1.createNewFile();
+            log2.createNewFile();
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(log1, true))) {
+            
+            writer.write(message1);
+            
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(log2, true))) {
+            
+            writer.write(message2);
+            
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        String logListFirst = "<table><tr><td> Build ID </td><td> Date </td><td> Commit ID </td></tr>";
+        String logListSecond = "<tr><td><a href=\"/logs/1\"</a>1</td><td>" + LocalDate.now().toString() + "</td><td>1</td></tr>";
+        String logListThird = "<tr><td><a href=\"/logs/2\"</a>2</td><td>" + LocalDate.now().toString() + "</td><td>2</td></tr>";
+
+        String logListFourth = "</table>";
+        String logListStyle = "<style>table, th, td {border: 1px solid black;border-collapse: collapse;text-align: center;}</style>";
+
+        String fullLogList = logListFirst + logListSecond + logListThird + logListFourth + logListStyle;
+
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, dir);
+        assertEquals(fullLogList, ciServer.getBuilds());
+    }
+
+    /**
+     * Tries to get build logs when there are no
+     * .log files in the directory. Should return
+     * an only a HTML string containing a p element
+     */ 
+    @Test
+    public void getAllBuildLogsNegative(@TempDir Path path) throws IOException {
+        File dir = path.toFile();
+        File testFile = new File(dir.getPath() + "/log.txt");
+        String message = "This should not be read";
+
+        try {
+        testFile.createNewFile();
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(testFile, true))) {
+            writer.write(message);
+        } catch (IOException e) {
+            assertTrue(false);
+        }
+
+        ContinuousIntegrationServer ciServer = new ContinuousIntegrationServer(testSignature, testToken, dir);
+        String logListEmpty = "<table><tr><td> Build ID </td><td> Date </td><td> Commit ID </td></tr></table><style>table, th, td {border: 1px solid black;border-collapse: collapse;text-align: center;}</style>";
+        assertEquals(logListEmpty, ciServer.getBuilds());
+    }
 }
 

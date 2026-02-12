@@ -5,13 +5,18 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
@@ -19,58 +24,51 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.codec.digest.HmacUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import org.apache.commons.lang3.StringUtils;
-
-import java.time.LocalDate;
-
-
-import java.net.URLDecoder;
+import io.github.cdimascio.dotenv.Dotenv;
 
 /** 
  *A ContinuousIntegrationServer which acts as webhook.
  */
 public class ContinuousIntegrationServer extends AbstractHandler {
     private final File logsFolder;
+    private final GitHubApiClient githubClient;
+    private final String signature;
+    
+    /**
+     * Constructs a new ContinuousIntegrationServer instance with the default logs folder path.
+     */
+    public ContinuousIntegrationServer(String signature, String githubToken, File logsFolder) {
+        this.logsFolder = logsFolder;
+
+
+        if (!logsFolder.exists()) {
+            logsFolder.mkdir();
+        }
+
+        if (logsFolder.isFile()) {
+            throw new IllegalArgumentException("logsFolder can not be an already existing file.");
+        }
+		this.signature = signature;
+        githubClient = new GitHubApiClient(githubToken);
+    }
+    
 
     /**
      * Constructs a new ContinuousIntegrationServer instance with the default logs folder path.
      */
-    public ContinuousIntegrationServer() {
-        logsFolder = new File("logs");
-
-        if (!logsFolder.exists()) {
-            logsFolder.mkdir();
-        }
-
-        if (logsFolder.isFile()) {
-            throw new IllegalArgumentException("logsFolder can not be an already existing file.");
-        }
+    public ContinuousIntegrationServer(String signature, String githubToken) {
+        this(signature, githubToken, new File("logs"));
     }
     
-    /**
-     * Constructs a new ContinuousIntegrationServer instance with a specified logs folder path.
-     * 
-     * @param logsFolder The specified logs folder.
-     */
-    public ContinuousIntegrationServer(File logsFolder) {
-        this.logsFolder = logsFolder;
-
-        if (!logsFolder.exists()) {
-            logsFolder.mkdir();
-        }
-
-        if (logsFolder.isFile()) {
-            throw new IllegalArgumentException("logsFolder can not be an already existing file.");
-        }
-    }
 
     public void handle(String target,
                        Request baseRequest,
@@ -115,34 +113,50 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         throws IOException, ServletException
     {
         String githubEvent = request.getHeader("X-GitHub-Event");
-
+        	String githubSignature = request.getHeader("X-Hub-Signature-256");
         try {
             String body = IOUtils.toString(request.getReader());
+			validateGithubSignature(githubSignature, body);
             String urlDecoded = URLDecoder.decode(body, StandardCharsets.UTF_8);
             String jsonStr = urlDecoded.replace("payload=", "");
             System.out.println(jsonStr);
             JSONObject jsonObject = new JSONObject(jsonStr);
 
             if ("push".equals(githubEvent)) {
-                PushEventInfo info = extractPushInfo(jsonObject);
-                
+                PushEventInfo info = PushEventInfo.fromJSON(jsonObject);
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().println("Push event recieved.");
-
-
 
                 File gitDirectory = gitClone(info.repoURL(), info.SHA());
                 String testLog = runTests(gitDirectory);
                 storeBuildLog(testLog, info.SHA());
                 
+                // TO DO: Run CI Pipeline
+
             } else {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().println("No push event recieved. Event ignored.");
             }
-
+        } catch (SecurityException e) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
         } catch (IllegalArgumentException | JSONException | InterruptedException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
+    }
+
+    /**
+     * Validates the incoming github webhook signature of the
+     * payload and throws SecurityException if invalid
+     */
+    private void validateGithubSignature(String githubSignature, String body) throws SecurityException, IllegalArgumentException {
+		if (githubSignature == null || githubSignature.isEmpty()) {
+			throw new IllegalArgumentException("Github Signature cant be null");
+		}
+		String calculatedHmac = new HmacUtils("HmacSHA256", signature).hmacHex(body);
+		boolean signaturesAreEqual = githubSignature.equals("sha256=" + calculatedHmac);
+		if (!signaturesAreEqual) {
+			throw new SecurityException("Signature does not match webhook");
+		}
     }
 
     private void handleGet(String target,
@@ -182,71 +196,34 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     }
 
     /**
-     * Extracts information from Github push webhook payload.
-     * 
-     * @param jsonObject the JSON payload recieved from Github push event.
-     * @return a PushEventInfo record containing extracted data.
-     * @throws IllegalArgumentException if payload is not valid.
-     */
-    PushEventInfo extractPushInfo(JSONObject jsonObject) throws IllegalArgumentException{
-        try {
-            JSONObject repo = jsonObject.getJSONObject("repository");
-            String repoURL = repo.getString("clone_url");
-
-            String SHA = jsonObject.getString("after");
-
-            String ref = jsonObject.getString("ref");
-            String branch = ref.replace("refs/heads/", "");
-
-            JSONObject pusher = jsonObject.getJSONObject("pusher");
-            String author = pusher.getString("name");
-
-            String commitMessage;
-            
-            try {
-                JSONArray commits= jsonObject.getJSONArray("commits");
-                JSONObject latestCommit = commits.getJSONObject(0);
-                commitMessage = latestCommit.getString("message");
-            } catch (JSONException e) {
-                commitMessage = "N/A";
-            }
-
-            return new PushEventInfo(author, repoURL, SHA, branch, commitMessage);
-        } catch (JSONException e) {
-            throw new IllegalArgumentException("Invalid Github push payload", e);
-        }
-    }
-
-
-    /**
      * Executes command in specificed directory 
      * @param command The command to run.
      * @param directory The directory to run it in.
      * @return Returns the terminal output after the command.
      */
     String runCommand(List<String> command, File directory) throws IOException, InterruptedException {
-	ProcessBuilder processBuilder = new ProcessBuilder(command);
-	processBuilder.directory(directory);
-	processBuilder.redirectErrorStream(true);
-	Process process = processBuilder.start();
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.directory(directory);
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
 
-	try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-		StringBuilder stringBuilder = new StringBuilder();
-		String line;
-		boolean firstLine = true;
-		while ((line = bufferedReader.readLine()) != null) {
-			if (!firstLine) {
-					stringBuilder.append("\n");
-			}
-			stringBuilder.append(line);
-			firstLine = false;
-		}
-		process.waitFor();
-		String output = stringBuilder.toString();
-		return output;
-	} finally {
-		process.destroy();
-	}
+        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            StringBuilder stringBuilder = new StringBuilder();
+            String line;
+            boolean firstLine = true;
+            while ((line = bufferedReader.readLine()) != null) {
+                if (!firstLine) {
+                        stringBuilder.append("\n");
+                }
+                stringBuilder.append(line);
+                firstLine = false;
+            }
+            process.waitFor();
+            String output = stringBuilder.toString();
+            return output;
+        } finally {
+            process.destroy();
+        }
     }
 
 
@@ -332,25 +309,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     }
 
     /**
-     * Returns a summary of the log with the given build ID.
-     * @param buildId Build ID of the log
-     * @return The summary of the log with the following format:
-     * <br>
-     * "[Build ID] [Date] [commit ID]".
-     * <br> <br>
-     * Metadata is replaced by "null" if it does not exist.
-     * @throws IOException If the file does not exist
-     * @throws IllegalArgumentException If the argument leads to a path outisde of the logs folder
-     */
-    String getBuildLogSummary(String buildId) throws IOException, IllegalArgumentException {
-        String fullText = getBuildLog(buildId);
-        String commitId = StringUtils.substringBetween(fullText, "Commit ID: ", "\n");
-        String date = StringUtils.substringBetween(fullText, "Build date: ", "\n");
-        String output = buildId + " " + date + " " + commitId;
-        return output;
-    }
-
-    /**
      * Checks wheter the given file is inside the log directory.
      * @param file The specified file.
      * @return True if the file is in the log directory.
@@ -363,11 +321,93 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     };
 
     /**
-     * Returns a string containing information of all logs in the log directory.
+     * Returns an HTML table row containing a summary of the
+     * log with the given build ID.
+     * @param buildId Build ID of the log
+     * @return The summary of the log with the following format:
+     * <tr>
+     *  <td> [Build ID (as a href)] </td>
+     *  <td> [Date] </td>
+     *  <td> [Commit ID] </td>
+     * </tr>
+     * Metadata is replaced by "null" if it does not exist.
+     * @throws IOException If the file does not exist
+     * @throws IllegalArgumentException If the argument leads to a path outisde of the logs folder
+     */
+    String getBuildLogHTMLTableRow(String buildId) throws IOException, IllegalArgumentException {
+        String fullText = getBuildLog(buildId);
+        String commitId = StringUtils.substringBetween(fullText, "Commit ID: ", "\n");
+        String date = StringUtils.substringBetween(fullText, "Build date: ", "\n");
+        String output = "<tr><td><a href=\"/logs/" + buildId + "\"</a>" + buildId + "</td>" 
+        + "<td>" + date + "</td>" +  "<td>" + commitId + "</td></tr>";
+        return output;
+    }
+
+    /**
+     * Creates HTML output based on Build IDs. The HTML output also
+     * contains a style tag used to put borders and centralize text
+     * in cells.
+     *
+     * @param buildIds The list of Build IDs currently in the log folder
+     * @return An HTML table containing Build ID, date and Commit ID for all builds
+     */ 
+    private String createHTMLTableWithLogSummaries(List<String> buildIds) {
+        StringBuilder logTable = new StringBuilder();
+
+        logTable.append("<table><tr><td> Build ID </td><td> Date </td><td> Commit ID </td></tr>");
+
+        for (String buildId : buildIds) {
+            try {
+                logTable.append(getBuildLogHTMLTableRow(buildId));
+            } catch (IOException e) {
+                continue;
+            }
+        }
+        logTable.append("</table>");
+        logTable.append("<style>table, th, td {border: 1px solid black;border-collapse: collapse;text-align: center;}</style>");
+        return logTable.toString();
+    }
+
+    /**
+     * Searches the log directory for log files, and returns a string.
+     * The string contains a HTML table, with rows for each log entry
+     * and cells with Build ID, date and Commit ID.
      * @return A string containing information of all logs in the log directory.
      */
     public String getBuilds() {
-        return "TODO";
+        Path logsFolderPath = logsFolder.toPath();
+
+        // List to store all build IDs found in the log folder
+        List<String> buildIds = new ArrayList<>();
+
+        // Iterate the log directory and save file names that have
+        // the ".log" extension
+		try ( Stream<Path> paths = Files.walk(logsFolderPath)) {
+            for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+                String buildId = path.getFileName().toString();
+                
+                if(!buildId.endsWith(".log")) {
+                    continue;
+                }
+
+                // Extract the file name without extension and
+                // append to buildIds
+                buildId = buildId.substring(0, buildId.length() - 4);
+                buildIds.add(buildId);
+            }
+	    } catch (Exception e) {
+            return null;
+        }
+
+        // Sort the buildId list to display the 
+        // builds in ascending order
+        buildIds.sort(Comparator.comparingInt(Integer::parseInt));
+        String logTable;
+        // Get an HTML table containing summaries for 
+        // the found buildIds
+        logTable = createHTMLTableWithLogSummaries(buildIds);
+
+        return logTable;
     }
 
     /**
@@ -432,8 +472,17 @@ public class ContinuousIntegrationServer extends AbstractHandler {
      */
     public static void main(String[] args) throws Exception
     {
+		Dotenv dotenv = Dotenv.load();
+		String webhookSignature = dotenv.get("WEBHOOK_SIGNATURE");
+		if (webhookSignature == null || webhookSignature.isEmpty()) {
+			throw new IllegalStateException("env variable WEBHOOK_SIGNATURE must be set in .env file");
+		}
+        String githubToken = dotenv.get("GITHUB_TOKEN");
+        if (githubToken == null || githubToken.isEmpty()) {
+			throw new IllegalStateException("env variable GITHUB_TOKEN must be set in .env file");
+		}
         Server server = new Server(8080);
-        server.setHandler(new ContinuousIntegrationServer()); 
+        server.setHandler(new ContinuousIntegrationServer(webhookSignature, githubToken)); 
         server.start();
         server.join();
     }

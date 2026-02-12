@@ -32,7 +32,23 @@ ngrok http 8080
 In your Github repository:
 
 * go to `Settings >> Webhooks`, click on `Add webhook`.
+* Enter a "secure" password in `Secret`
 * paste the forwarding URL (from the ngrok terminal) in the field `Payload URL` and then click on `Add webhook`. In the simplest setting, nothing more is required.
+
+### Add secret to project
+Create `.env` file in project root and set the variable `WEBHOOK_SIGNATURE` to the password you used in previous step
+
+Alternatively, one could copy paste and replace "password123" with their "secure" password
+```bash
+echo WEBHOOK_SIGNATURE=password123 > .env
+```
+
+### Generate Github API Token
+
+* Go to https://github.com/settings/tokens 
+* Select resource owner and then this repository for "repository access" and set the following permission: "Commit statuses" repository permissions (Read and Write)
+* Generate token
+* Set the variable `GITHUB_TOKEN` to the generated token in `.env` file in a similiar manner as previous step
 
 ## Functionality
 When the server is running it has the following functionality.
@@ -42,6 +58,7 @@ When the server is running it has the following functionality.
 
 - If you are using forwarding with ngrok, you can visit your forwarding URL and append /logs (eg http://someurl.ngork.io/logs).
 
+
 ## Testing
 When the server receives a push event from Github, it builds and tests the project automatically. This is done through extracting e.g. repository URL, which commit and which branch to test from the payload of the HTTP request.
 
@@ -50,3 +67,8 @@ The test execution is carried out by creating a new process and running the comm
 
 ### Unit testing
 Unit testing is implemented with the ```JUnit``` library. Each public method have at least one corresponing unit test to test its functionality. Several methods require writing and/or reading files, which is done by creating files and directories within a temporary directory. The temporary directory, ```@TempDir``` in JUnit, helps managing temporary files used during testing.
+
+## Essence
+
+Looking at the checklist we have completed the **seeded** phase and **formed** stage after the first assignment. We would argue that we are currently in the **collaborating** phase. This is primarly because of the "The team members know and trust each other" check, we are still getting to know each other. Overtime, by continuing to collaborate and communicating, we will get to know each other better and trust each other more and eventually be able to move on to the **performing** stage.
+
