@@ -60,6 +60,25 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 		this.signature = signature;
         githubClient = new GitHubApiClient(githubToken);
     }
+
+
+    /**
+     * Constructs a new ContinuousIntegrationServer instance
+     */
+    public ContinuousIntegrationServer(String signature, File logsFolder, GitHubApiClient githubClient) {
+        this.logsFolder = logsFolder;
+
+
+        if (!logsFolder.exists()) {
+            logsFolder.mkdir();
+        }
+
+        if (logsFolder.isFile()) {
+            throw new IllegalArgumentException("logsFolder can not be an already existing file.");
+        }
+		this.signature = signature;
+        	this.githubClient = githubClient;
+    }
     
 
     /**
@@ -70,6 +89,13 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     }
     
 
+    /**
+     * Handles incoming HTTP requests 
+     * @param target                target of the request.
+     * @param baseRequest           Request to signal to Jetty that the request has been processed
+     * @param request               HttpServletRequest request containing headers and payload.
+     * @param response              HttpServletResponse reponse acknowledge webhook. 
+     */
     public void handle(String target,
                        Request baseRequest,
                        HttpServletRequest request,
@@ -78,8 +104,6 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     {
         response.setContentType("text/html;charset=utf-8");
         baseRequest.setHandled(true);
-
-        System.out.println(target);
 
         switch (request.getMethod().toUpperCase()) {
             case "POST":
@@ -112,14 +136,13 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                        HttpServletResponse response) 
         throws IOException, ServletException
     {
-        String githubEvent = request.getHeader("X-GitHub-Event");
-        	String githubSignature = request.getHeader("X-Hub-Signature-256");
         try {
+            String githubEvent = request.getHeader("X-GitHub-Event");
+            String githubSignature = request.getHeader("X-Hub-Signature-256");
             String body = IOUtils.toString(request.getReader());
 			validateGithubSignature(githubSignature, body);
             String urlDecoded = URLDecoder.decode(body, StandardCharsets.UTF_8);
             String jsonStr = urlDecoded.replace("payload=", "");
-            System.out.println(jsonStr);
             JSONObject jsonObject = new JSONObject(jsonStr);
 
             if ("push".equals(githubEvent)) {
@@ -129,20 +152,19 @@ public class ContinuousIntegrationServer extends AbstractHandler {
 
                 File gitDirectory = gitClone(info.repoURL(), info.SHA());
                 String testLog = runTests(gitDirectory);
-		String description;
+
+				String description;
                 storeBuildLog(testLog, info.SHA());
+				String state;
+				if (mvnTestOutputSucceeded(testLog)) {
+							state = "success";
+							description = "mvn test succeeded";
+				} else {
+							state = "failure";
+							description = "mvn test failed";
+				}
+				githubClient.updateCommitStatus(info.repoURL(), info.SHA(), state, description, null);
 
-		String state;
-		if (mvnTestOutputSucceeded(testLog)) {
-					state = "success";
-					description = "beautiful success";
-		} else {
-					state = "failure";
-					description = "not beautiful success";
-		}
-		githubClient.updateCommitStatus(info.repoURL(), info.SHA(), state, description, null);
-
-                // TO DO: Run CI Pipeline
 
             } else {
                 response.setStatus(HttpServletResponse.SC_OK);
@@ -151,6 +173,8 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         } catch (SecurityException e) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
         } catch (IllegalArgumentException | JSONException | InterruptedException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        } catch (Exception e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }

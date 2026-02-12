@@ -1,5 +1,8 @@
 # Assignment2-Continuous-Integration
 
+## Description
+This is a continious integration server which works with github webhooks. When a push is made, the server clones the push and runs tests to see the state of the commit (Does it compile, do any tests fail). The state of the commit is then sent back to github so anyone can see the state of the commit. The server also stores the build logs and makes them accessible through the internet. 
+
 ## Setting up the CI server
 
 ### Dependencies
@@ -58,11 +61,54 @@ When the server is running it has the following functionality.
 
 - If you are using forwarding with ngrok, you can visit your forwarding URL and append /logs (eg http://someurl.ngork.io/logs).
 
+
+## Testing
+When the server receives a push event from Github, it builds and tests the project automatically. This is done through extracting e.g. repository URL, which commit and which branch to test from the payload of the HTTP request.
+
+### Test Execution
+The test execution is carried out by creating a new process and running the command ```mvn clean test```, which builds and runs all tests implemented under ```src/test/java```. Information produced by the build and test is collected from the terminal output. To test that this works properly, we use two minimal maven projects that are compiled and unit tested by the server's methods.
+
+### Unit testing
+Unit testing is implemented with the ```JUnit``` library. Each public method have at least one corresponing unit test to test its functionality. Several methods require writing and/or reading files, which is done by creating files and directories within a temporary directory. The temporary directory, ```@TempDir``` in JUnit, helps managing temporary files used during testing.
+
+### Notifications
+Notifications is implemented by creating a http client which connects to the github api and authenthiactes through a Personal Access Token. The client then constructs a POST request containing commit status (success/failure depeneding on `mvn clean test` output) and sends it to the github status endpoint. To test these notifications we mock the Github Api Http Client and an incoming push event for a local empty git repo, so that `mvn test` fails and returns the "failure" commit status but still a Success Response code.   
+
+## Documentation
+A browsable documenation using Javadoc can be generated with the following command:
+
+```mvn javadoc:javadoc```
+
+The documenation becomes available under ```target/reports/apidocs```. 
+
 ## Essence
 
 Looking at the checklist we have completed the **seeded** phase and **formed** stage after the first assignment. We would argue that we are currently in the **collaborating** phase. This is primarly because of the "The team members know and trust each other" check, we are still getting to know each other. Overtime, by continuing to collaborate and communicating, we will get to know each other better and trust each other more and eventually be able to move on to the **performing** stage.
 
-## Logs
 
+## Log URL fo presentation
+(only works during presentation)
 https://unmorally-jacketed-cherlyn.ngrok-free.dev/logs
 
+## Contributions
+
+### Melker Trané
+- Implemeted http GET functionality for a specific log
+- Documented how to set up the server, how to make it visible from the interner, and how to add the webhook.
+- Reviewed around 1/2 of other team members PRs.
+
+### Edwin Nordås Jogensjö
+- Implemented functionality that stores build logs
+- Implemented the retreiving of all build logs as HTML
+- Created a test-running method and two small maven projects that are compiled and run as tests.
+
+### Vidar Nykvist 
+- Implemented functionality for executing an arbitrary terminal command and safely cloning a repository.
+- Implemented validation of github webhook signature. 
+- Documented essence and dependencies.
+
+### Chua Jia Yi, Clarabelle
+- Implemented functionality of showing commit status on GithHub using GitHub API
+
+### Maria Pettersson
+- Implemented parsing of Github webhook payload with validation and error handling.
