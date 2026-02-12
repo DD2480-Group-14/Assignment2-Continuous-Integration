@@ -121,9 +121,9 @@ public class ContinuousIntegrationServer extends AbstractHandler {
                        HttpServletResponse response) 
         throws IOException, ServletException
     {
-        String githubEvent = request.getHeader("X-GitHub-Event");
-        	String githubSignature = request.getHeader("X-Hub-Signature-256");
         try {
+            String githubEvent = request.getHeader("X-GitHub-Event");
+            String githubSignature = request.getHeader("X-Hub-Signature-256");
             String body = IOUtils.toString(request.getReader());
 			validateGithubSignature(githubSignature, body);
             String urlDecoded = URLDecoder.decode(body, StandardCharsets.UTF_8);
@@ -149,6 +149,8 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         } catch (SecurityException e) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
         } catch (IllegalArgumentException | JSONException | InterruptedException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        } catch (Exception e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
