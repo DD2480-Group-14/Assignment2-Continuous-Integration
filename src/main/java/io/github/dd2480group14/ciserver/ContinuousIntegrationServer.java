@@ -70,6 +70,13 @@ public class ContinuousIntegrationServer extends AbstractHandler {
     }
     
 
+    /**
+     * Handles incoming HTTP requests 
+     * @param target                target of the request.
+     * @param baseRequest           Request to signal to Jetty that the request has been processed
+     * @param request               HttpServletRequest request containing headers and payload.
+     * @param response              HttpServletResponse reponse acknowledge webhook. 
+     */
     public void handle(String target,
                        Request baseRequest,
                        HttpServletRequest request,
