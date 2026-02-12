@@ -71,6 +71,9 @@ The test execution is carried out by creating a new process and running the comm
 ### Unit testing
 Unit testing is implemented with the ```JUnit``` library. Each public method have at least one corresponing unit test to test its functionality. Several methods require writing and/or reading files, which is done by creating files and directories within a temporary directory. The temporary directory, ```@TempDir``` in JUnit, helps managing temporary files used during testing.
 
+### Notifications
+Notifications is implemented by creating a http client which connects to the github api and authenthiactes through a Personal Access Token. The client then constructs a POST request containing commit status (success/failure depeneding on `mvn clean test` output) and sends it to the github status endpoint. To test these notifications we mock the Github Api Http Client and an incoming push event for a local empty git repo, so that `mvn test` fails and returns the "failure" commit status but still a Success Response code.   
+
 ## Documentation
 A browsable documenation using Javadoc can be generated with the following command:
 
