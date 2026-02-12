@@ -8,7 +8,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-public class GitHubApiClient {
+class GitHubApiClient {
     private final OkHttpClient client;
     private final String token;
     private static final String GITHUB_API_BASE = "https://api.github.com";
@@ -16,7 +16,7 @@ public class GitHubApiClient {
     /**
      * Creates a new GitHub API client.
      */
-    public GitHubApiClient(String token) {
+    GitHubApiClient(String token) {
         this.client = new OkHttpClient();
         this.token = token;
     }
@@ -24,7 +24,7 @@ public class GitHubApiClient {
     /**
      * Updates the commit status on GitHub.
      */
-    public boolean updateCommitStatus(String repoURL, String sha, String state, 
+    boolean updateCommitStatus(String repoURL, String sha, String state, 
                                      String description, String targetUrl) {
         try {
             // Extract owner or repo from clone URL
