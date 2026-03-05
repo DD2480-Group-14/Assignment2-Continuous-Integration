@@ -85,7 +85,6 @@ The documenation becomes available under ```target/reports/apidocs```.
 
 Looking at the checklist we have completed the **seeded** phase and **formed** stage after the first assignment. We would argue that we are currently in the **collaborating** phase. This is primarly because of the "The team members know and trust each other" check, we are still getting to know each other. Overtime, by continuing to collaborate and communicating, we will get to know each other better and trust each other more and eventually be able to move on to the **performing** stage.
 
-
 ## Log URL fo presentation
 (only works during presentation)
 https://unmorally-jacketed-cherlyn.ngrok-free.dev/logs
