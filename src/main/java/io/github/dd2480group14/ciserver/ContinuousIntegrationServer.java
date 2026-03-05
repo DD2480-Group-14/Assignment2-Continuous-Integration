@@ -11,12 +11,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
@@ -238,6 +236,7 @@ public class ContinuousIntegrationServer extends AbstractHandler {
         response.sendError(404);
     }
 
+    
     /**
      * Executes command in specificed directory 
      * @param command The command to run.
