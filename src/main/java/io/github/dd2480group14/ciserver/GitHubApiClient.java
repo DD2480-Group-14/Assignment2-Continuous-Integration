@@ -21,6 +21,7 @@ class GitHubApiClient {
         this.token = token;
     }
 
+    
     /**
      * Updates the commit status on GitHub.
      */
